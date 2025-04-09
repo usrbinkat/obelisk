@@ -1,0 +1,70 @@
+version: '3'
+
+tasks:
+  run:
+    desc: Build and serve the static site from vault directory with live reload
+    cmds:
+      - poetry run mkdocs serve --livereload
+      
+  serve:
+    desc: Build and serve the static site without live reload
+    cmds:
+      - poetry run mkdocs serve --no-livereload
+
+  build:
+    desc: Build the static site without serving
+    cmds:
+      - poetry run mkdocs build
+
+  test:
+    desc: Build the static site with strict mode to catch errors
+    cmds:
+      - poetry run mkdocs build --clean --strict
+
+  new:
+    desc: Create a new markdown file in vault
+    cmds:
+      - mkdir -p vault
+      - |
+        cat > vault/{{.CLI_ARGS}}.md << EOF
+        ---
+        title: {{.CLI_ARGS}}
+        date: $(date +%Y-%m-%d)
+        ---
+
+        EOF
+
+  install:
+    desc: Install or update dependencies with Poetry
+    cmds:
+      - poetry install --no-root
+
+  update:
+    desc: Update all dependencies to their latest versions
+    cmds:
+      - poetry update
+
+  docker-build:
+    desc: Build the Docker container
+    cmds:
+      - docker build -t obelisk:latest .
+      
+  docker-run:
+    desc: Run the Docker container for development
+    cmds:
+      - docker run -p 8000:8000 -v ${PWD}/vault:/app/vault -v ${PWD}/mkdocs.yml:/app/mkdocs.yml obelisk:latest
+      
+  compose:
+    desc: Run the full stack with docker-compose
+    cmds:
+      - docker-compose up
+      
+  compose-obelisk:
+    desc: Run only the obelisk service with docker-compose
+    cmds:
+      - docker-compose up obelisk
+      
+  gh-pages:
+    desc: Deploy to GitHub Pages
+    cmds:
+      - poetry run mkdocs gh-deploy --force
