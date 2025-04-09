@@ -1,0 +1,23 @@
+/* Custom styles for Obelisk */
+
+:root {
+  --md-primary-fg-color: #4051b5;
+  --md-primary-fg-color--light: #7986cb;
+  --md-primary-fg-color--dark: #303f9f;
+  --md-accent-fg-color: #4051b5;
+}
+
+/* Special styling for Obsidian compatibility */
+.admonition {
+  border-radius: 6px;
+  margin: 1.5em 0;
+}
+
+/* Custom callouts */
+.callout {
+  border-left: 4px solid var(--md-primary-fg-color);
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  background-color: rgba(var(--md-primary-fg-color--light), 0.1);
+  border-radius: 0 4px 4px 0;
+}
