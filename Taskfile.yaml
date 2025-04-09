@@ -2,14 +2,14 @@ version: '3'
 
 tasks:
   run:
-    desc: Build and serve the static site from vault directory with live reload
+    desc: Fast development server with live reload and dirty builds
     cmds:
-      - poetry run mkdocs serve --livereload
+      - poetry run mkdocs serve --livereload --dirty
       
   serve:
-    desc: Build and serve the static site without live reload
+    desc: Build and serve the static site with live reload and open browser
     cmds:
-      - poetry run mkdocs serve --no-livereload
+      - poetry run mkdocs serve --livereload --watch-theme --open
 
   build:
     desc: Build the static site without serving
