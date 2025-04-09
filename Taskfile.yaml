@@ -74,3 +74,13 @@ tasks:
     desc: Deploy to GitHub Pages
     cmds:
       - poetry run mkdocs gh-deploy --force
+      
+  version-deploy:
+    desc: Deploy a new version (usage: task version-deploy -- 1.0.0 "Version description")
+    cmds:
+      - poetry run mike deploy --push --update-aliases {{.CLI_ARGS}}
+      
+  version-set-default:
+    desc: Set the default version (usage: task version-set-default -- 1.0.0)
+    cmds:
+      - poetry run mike set-default --push {{.CLI_ARGS}}

@@ -12,6 +12,8 @@ Obelisk is a tool to publish Obsidian vaults as MkDocs Material Theme sites with
 - `task run` - Fast development server with livereload
 - `task serve` - Build and serve with browser opening
 - `task clean` - Remove build artifacts
+- `task version-deploy -- X.Y.Z "Description"` - Deploy version
+- `task version-set-default -- X.Y.Z` - Set default version
 
 ## Docker Commands
 - `task docker-build` - Build Docker container
