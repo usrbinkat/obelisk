@@ -58,7 +58,7 @@ tasks:
   docker-run:
     desc: Run the Docker container for development
     cmds:
-      - docker run -p 8000:8000 -v ${PWD}/vault:/app/vault -v ${PWD}/mkdocs.yml:/app/mkdocs.yml obelisk:latest
+      - docker run -p 8000:8000 -v ${PWD}/vault:/app/vault -v ${PWD}/mkdocs.yml:/app/mkdocs.yml -v ${PWD}/pyproject.toml:/app/pyproject.toml -v ${PWD}/poetry.lock:/app/poetry.lock obelisk:latest
       
   compose:
     desc: Run the full stack with docker-compose

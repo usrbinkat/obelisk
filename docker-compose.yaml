@@ -65,6 +65,8 @@ services:
     volumes:
       - ./vault:/app/vault
       - ./mkdocs.yml:/app/mkdocs.yml
+      - ./pyproject.toml:/app/pyproject.toml
+      - ./poetry.lock:/app/poetry.lock
     ports:
       - "8000:8000"
     networks:
