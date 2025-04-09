@@ -57,6 +57,20 @@ services:
       - ollama-net
     restart: unless-stopped
 
+  obelisk:
+    container_name: obelisk
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./vault:/app/vault
+      - ./mkdocs.yml:/app/mkdocs.yml
+    ports:
+      - "8000:8000"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+
 volumes:
   data:
   models:
