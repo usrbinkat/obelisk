@@ -23,6 +23,6 @@ Obelisk is a tool to publish Obsidian vaults as MkDocs Material Theme sites with
 - Python: Follow PEP 8 standards
 - Use Poetry for dependency management
 - YAML files: 2-space indentation
-- Markdown content: Use Material theme features (admonitions, etc.)
+- MkDocs Markdown content: Use Material theme features (admonitions, etc.)
 - Prefer absolute imports in Python code
 - Maintain consistent naming convention in Taskfile
