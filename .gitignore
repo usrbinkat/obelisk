@@ -23,6 +23,8 @@ var/
 .venv
 venv/
 ENV/
+.coverage
+htmlcov/
 
 # MkDocs
 site/
@@ -31,5 +33,19 @@ site/
 .obsidian/
 **/.obsidian/
 
+# Node.js (legacy)
+node_modules/
+tsconfig.tsbuildinfo
+
+# Quartz (legacy)
+.quartz-cache/
+public/
+
 # OS specific
 .DS_Store
+
+# Misc
+private/
+.replit
+replit.nix
+prof/
