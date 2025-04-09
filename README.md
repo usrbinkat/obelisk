@@ -13,6 +13,8 @@ Obelisk is a tool designed to transform your Obsidian vault into a beautifully r
 - **AI Integration**: Connect with Ollama and Open WebUI for AI-enhanced content
 - **Docker Support**: Easy deployment with containerization
 - **Poetry**: Python dependency management
+- **GitHub Actions**: Automatic deployment to GitHub Pages
+- **Task-based Workflow**: Simple commands for common operations
 
 ## Getting Started
 
@@ -81,3 +83,7 @@ task compose
 ## License
 
 [MIT](LICENSE)
+
+## Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.

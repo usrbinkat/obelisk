@@ -43,6 +43,12 @@ tasks:
     desc: Update all dependencies to their latest versions
     cmds:
       - poetry update
+      
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf site
+      - find . -type d -name __pycache__ -exec rm -rf {} +
 
   docker-build:
     desc: Build the Docker container

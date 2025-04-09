@@ -107,3 +107,9 @@ extra_css:
 
 # Directory and nav settings
 docs_dir: vault
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Cloud: 
+    - Overview: cloud/Cloud Native Tooling.md
