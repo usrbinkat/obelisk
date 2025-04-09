@@ -58,71 +58,71 @@
     "mounts": [
         "source=dind-var-lib-docker,target=/var/lib/docker,type=volume",
         {
-            "source": "zora-pulumi-config",
+            "source": "obelisk-pulumi-config",
             "target": "/home/ubuntu/.pulumi",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-kube-config",
+            "source": "obelisk-kube-config",
             "target": "/home/ubuntu/.kube",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-aws-config",
+            "source": "obelisk-aws-config",
             "target": "/home/ubuntu/.aws",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-gcloud-config",
+            "source": "obelisk-gcloud-config",
             "target": "/home/ubuntu/.config/gcloud",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-terraform-config",
+            "source": "obelisk-terraform-config",
             "target": "/home/ubuntu/.terraform.d",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-go-pkg",
+            "source": "obelisk-go-pkg",
             "target": "/home/ubuntu/go/pkg",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
-        "source=zora-cache,target=/home/ubuntu/.cache,type=volume",
+        "source=obelisk-cache,target=/home/ubuntu/.cache,type=volume",
         {
-            "source": "zora-config",
+            "source": "obelisk-config",
             "target": "/home/ubuntu/.config",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-azure",
+            "source": "obelisk-azure",
             "target": "/home/ubuntu/.azure",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-vscode-server",
+            "source": "obelisk-vscode-server",
             "target": "/home/ubuntu/.vscode-server",
             "type": "volume",
             "uid": 1000,
             "gid": 1000
         },
         {
-            "source": "zora-cargo",
+            "source": "obelisk-cargo",
             "target": "/home/ubuntu/.cargo",
             "type": "volume",
             "uid": 1000,
