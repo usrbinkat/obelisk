@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block announce %}
+  <a href="https://github.com/usrbinkat/obelisk">
+    <span class="twemoji">{% include ".icons/fontawesome/brands/github.svg" %}</span>
+    <strong>Obelisk v0.1.0</strong> released - Start your Obelisk now
+  </a>
+{% endblock %}
+
+{% block outdated %}
+  You're viewing an outdated version of this documentation.
+  <a href="{{ '../' ~ base_url }}">
+    <strong>Click here to go to the latest version.</strong>
+  </a>
+{% endblock %}
