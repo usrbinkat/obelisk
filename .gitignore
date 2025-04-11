@@ -50,3 +50,4 @@ private/
 replit.nix
 prof/.envrc
 .envrc
+.mcp.json
