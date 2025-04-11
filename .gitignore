@@ -48,4 +48,5 @@ public/
 private/
 .replit
 replit.nix
-prof/
+prof/.envrc
+.envrc
