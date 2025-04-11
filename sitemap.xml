@@ -2,10 +2,66 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://usrbinkat.github.io/obelisk/</loc>
-         <lastmod>2025-04-09</lastmod>
+         <lastmod>2025-04-11</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/cloud/Cloud%20Native%20Tooling/</loc>
-         <lastmod>2025-04-09</lastmod>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/mkdocs-configuration/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/css/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/html/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/javascript/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/python/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/customization/versioning/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/docker/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/documentation/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/editor-config/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/git-config/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/python-config/</loc>
+         <lastmod>2025-04-11</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/development/task-runner/</loc>
+         <lastmod>2025-04-11</lastmod>
     </url>
 </urlset>
