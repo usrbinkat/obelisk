@@ -161,6 +161,20 @@ nav:
   - Home: index.md
   - Cloud: 
     - Overview: cloud/Cloud Native Tooling.md
+  - Chatbot:
+    - Overview: chatbot/index.md
+    - Models Configuration: chatbot/models.md
+    - Documentation Integration: chatbot/integration.md
+    - Open WebUI Configuration: chatbot/openwebui.md
+    - RAG Pipeline:
+      - Overview: chatbot/rag/index.md
+      - Architecture Design: chatbot/rag/architecture-draft.md
+      - Architecture Review: chatbot/rag/architecture-draft-review.md
+      - Vector Database: chatbot/rag/vector-database.md
+      - Query Pipeline: chatbot/rag/query-pipeline.md
+      - Ollama Integration: chatbot/rag/ollama-integration.md
+      - Implementation Guide: chatbot/rag/implementation.md
+      - Evaluation: chatbot/rag/evaluation.md
   - Customization:
     - Overview: customization/index.md
     - MkDocs Configuration: customization/mkdocs-configuration.md
