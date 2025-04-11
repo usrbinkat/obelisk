@@ -4,11 +4,13 @@ tasks:
   run:
     desc: Fast development server with live reload and dirty builds
     cmds:
+      - pkill -f "mkdocs serve" || true
       - poetry run mkdocs serve --livereload --dirty
       
   serve:
     desc: Build and serve the static site with live reload and open browser
     cmds:
+      - pkill -f "mkdocs serve" || true
       - poetry run mkdocs serve --livereload --watch-theme --open
 
   build:
@@ -45,8 +47,9 @@ tasks:
       - poetry update
       
   clean:
-    desc: Clean build artifacts
+    desc: Clean build artifacts and kill running mkdocs processes
     cmds:
+      - pkill -f "mkdocs serve" || true
       - rm -rf site
       - find . -type d -name __pycache__ -exec rm -rf {} +
 
@@ -76,11 +79,11 @@ tasks:
       - poetry run mkdocs gh-deploy --force
       
   version-deploy:
-    desc: Deploy a new version (usage: task version-deploy -- 1.0.0 "Version description")
+    desc: "Deploy a new version (usage: task version-deploy -- 1.0.0 \"Version description\")"
     cmds:
       - poetry run mike deploy --push --update-aliases {{.CLI_ARGS}}
       
   version-set-default:
-    desc: Set the default version (usage: task version-set-default -- 1.0.0)
+    desc: "Set the default version (usage: task version-set-default -- 1.0.0)"
     cmds:
       - poetry run mike set-default --push {{.CLI_ARGS}}
