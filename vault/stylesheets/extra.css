@@ -1,23 +1,318 @@
 /* Custom styles for Obelisk */
 
 :root {
-  --md-primary-fg-color: #4051b5;
-  --md-primary-fg-color--light: #7986cb;
-  --md-primary-fg-color--dark: #303f9f;
-  --md-accent-fg-color: #4051b5;
+  /* Primary theme colors - modern purple-blue gradient */
+  --md-primary-fg-color: #5e35b1;
+  --md-primary-fg-color--light: #9575cd;
+  --md-primary-fg-color--dark: #4527a0;
+  
+  /* Accent color - complementary orange for highlights */
+  --md-accent-fg-color: #ff8a65; 
+  --md-accent-fg-color--transparent: rgba(255, 138, 101, 0.1);
+  
+  /* Typography improvements */
+  --md-text-font: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+  --md-code-font: "Roboto Mono", SFMono-Regular, Consolas, Menlo, monospace;
+  
+  /* Custom variables */
+  --obelisk-border-radius: 8px;
+  --obelisk-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --obelisk-transition: all 0.3s ease;
+}
+
+/* Dark mode custom variables */
+[data-md-color-scheme="slate"] {
+  --obelisk-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* General Layout Enhancements */
+.md-main {
+  background-color: #fafafa;
+}
+
+.md-main__inner {
+  padding-top: 1.5rem;
+}
+
+.md-content {
+  background-color: white;
+  border-radius: var(--obelisk-border-radius);
+  box-shadow: var(--obelisk-box-shadow);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Dark mode overrides */
+[data-md-color-scheme="slate"] .md-main {
+  background-color: var(--md-default-bg-color);
+}
+
+[data-md-color-scheme="slate"] .md-content {
+  background-color: var(--md-default-bg-color);
+}
+
+/* Navigation Improvements */
+.md-nav {
+  font-size: 0.9rem;
+}
+
+.md-nav__link {
+  color: #455a64;
+  transition: var(--obelisk-transition);
+}
+
+.md-nav__link:hover {
+  color: var(--md-accent-fg-color);
+}
+
+.md-nav__link--active {
+  color: var(--md-primary-fg-color);
+  font-weight: 500;
+}
+
+/* Dark mode navigation */
+[data-md-color-scheme="slate"] .md-nav__link {
+  color: var(--md-default-fg-color--light);
+}
+
+/* Table of Contents Styling */
+.md-nav--secondary .md-nav__link {
+  padding-left: 0.6rem;
+  border-left: 2px solid transparent;
+  transition: var(--obelisk-transition);
+}
+
+.md-nav--secondary .md-nav__link--active {
+  border-left: 2px solid var(--md-accent-fg-color);
+}
+
+/* Heading styles */
+.md-content h1, 
+.md-content h2, 
+.md-content h3 {
+  font-weight: 500;
+  margin-top: 2rem;
+}
+
+.md-content h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--md-primary-fg-color--dark);
+}
+
+.md-content h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  padding-bottom: 0.3rem;
+}
+
+/* Dark mode headings */
+[data-md-color-scheme="slate"] .md-content h1 {
+  color: var(--md-primary-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] .md-content h2 {
+  border-bottom-color: rgba(255, 255, 255, 0.07);
 }
 
 /* Special styling for Obsidian compatibility */
 .admonition {
-  border-radius: 6px;
+  border-radius: var(--obelisk-border-radius);
   margin: 1.5em 0;
+  box-shadow: var(--obelisk-box-shadow);
+  border: none;
+  transition: var(--obelisk-transition);
+}
+
+.admonition:hover {
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+[data-md-color-scheme="slate"] .admonition:hover {
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.admonition-title {
+  font-weight: 500;
 }
 
 /* Custom callouts */
 .callout {
   border-left: 4px solid var(--md-primary-fg-color);
-  padding: 0.5em 1em;
-  margin: 1em 0;
-  background-color: rgba(var(--md-primary-fg-color--light), 0.1);
-  border-radius: 0 4px 4px 0;
+  padding: 1em 1.5em;
+  margin: 1.2em 0;
+  background-color: var(--md-accent-fg-color--transparent);
+  border-radius: 0 var(--obelisk-border-radius) var(--obelisk-border-radius) 0;
+  box-shadow: var(--obelisk-box-shadow);
+}
+
+/* Categories styling */
+.md-typeset p strong:has(+ em:contains("Categories")) {
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset hr + p {
+  margin-top: 0;
+  padding: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: var(--obelisk-border-radius);
+  text-align: center;
+}
+
+/* Dark mode categories */
+[data-md-color-scheme="slate"] .md-typeset hr + p {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Announcement bar styling */
+.md-banner {
+  background-color: #ff8a65; /* Orange background */
+  color: #212121; /* Dark text */
+  padding: 0; /* Remove padding, we'll control this through height */
+  font-size: 0.8rem; /* Slightly larger font size */
+  line-height: 1; /* Minimal line height */
+  height: 36px; /* Double the previous height (was 18px) */
+  display: flex;
+  align-items: center; /* Vertical centering */
+  justify-content: center; /* Horizontal centering */
+}
+
+.md-banner__inner {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.md-banner a {
+  color: #212121; /* Dark text */
+  text-decoration: none;
+  transition: var(--obelisk-transition);
+  display: inline-flex;
+  align-items: center; /* Vertical centering */
+  justify-content: center; /* Horizontal centering */
+  height: 100%;
+  font-weight: 500;
+  padding: 0 0.5rem;
+}
+
+.md-banner a:hover {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+/* Dark mode banner */
+[data-md-color-scheme="slate"] .md-banner {
+  background-color: #ff8a65; /* Keep orange background in dark mode */
+  color: #212121; /* Keep dark text in dark mode */
+}
+
+/* Make the banner icon smaller */
+.md-banner .twemoji {
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+/* Version selector styling */
+.md-version {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 0 0.5rem;
+}
+
+/* Code blocks styling */
+.highlight pre {
+  border-radius: var(--obelisk-border-radius);
+  padding: 1rem !important;
+}
+
+.highlight code {
+  font-size: 0.9rem;
+}
+
+/* Copy button for code blocks */
+.md-clipboard {
+  color: rgba(0, 0, 0, 0.4);
+  transition: var(--obelisk-transition);
+}
+
+.md-clipboard:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* Dark mode copy button */
+[data-md-color-scheme="slate"] .md-clipboard {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+[data-md-color-scheme="slate"] .md-clipboard:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* Tables styling */
+.md-typeset table:not([class]) {
+  border-radius: var(--obelisk-border-radius);
+  box-shadow: var(--obelisk-box-shadow);
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-primary-fg-color);
+  color: white;
+  font-weight: 500;
+}
+
+/* Tabbed content styling */
+.md-typeset .tabbed-set {
+  margin: 1.5em 0;
+}
+
+.md-typeset .tabbed-set > .tabbed-labels {
+  box-shadow: 0 -1px 0 inset rgba(0, 0, 0, 0.12);
+}
+
+.md-typeset .tabbed-set > .tabbed-labels > label {
+  font-size: 0.9rem;
+  padding: 0.9em 1.25em 0.8em;
+  transition: var(--obelisk-transition);
+}
+
+.md-typeset .tabbed-set > .tabbed-content {
+  box-shadow: var(--obelisk-box-shadow);
+  border-radius: 0 var(--obelisk-border-radius) var(--obelisk-border-radius) var(--obelisk-border-radius);
+  padding: 0.5rem;
+}
+
+/* Mobile Responsiveness Improvements */
+@media screen and (max-width: 76.1875em) {
+  .md-nav--primary .md-nav__title {
+    background-color: var(--md-primary-fg-color);
+    color: white;
+  }
+  
+  .md-sidebar--primary {
+    background-color: white;
+  }
+  
+  [data-md-color-scheme="slate"] .md-sidebar--primary {
+    background-color: var(--md-default-bg-color);
+  }
+}
+
+/* Print styles */
+@media print {
+  .md-content {
+    box-shadow: none;
+  }
+  
+  .admonition {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
 }
