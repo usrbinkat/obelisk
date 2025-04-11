@@ -1,47 +1,73 @@
 site_name: Obelisk
-site_description: Obsidian vault to MkDocs Material Theme site generator
+site_description: Obsidian vault to MkDocs Material Theme site generator with AI integration
 site_author: Obelisk Team
 site_url: https://usrbinkat.github.io/obelisk
 
 repo_name: usrbinkat/obelisk
 repo_url: https://github.com/usrbinkat/obelisk
+edit_uri: edit/main/vault/
 
 # Configuration
 theme:
   name: material
+  custom_dir: vault/overrides
   features:
+    # Navigation
     - navigation.instant
     - navigation.tracking
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
     - navigation.indexes
     - navigation.top
+    - navigation.footer
+    - navigation.path
+    
+    # Table of contents
     - toc.follow
+    - toc.integrate
+    
+    # Search
     - search.suggest
     - search.highlight
+    - search.share
+    
+    # Content
     - content.tabs.link
     - content.code.annotation
     - content.code.copy
+    - content.action.edit
+    - content.action.view
+    
+    # Header anchors and tooltips
+    - header.autohide
+    
   palette:
-    - scheme: default
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-      primary: indigo
-      accent: indigo
-    - scheme: slate
+      primary: deep purple
+      accent: deep orange
+    # Dark mode  
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-      primary: indigo
-      accent: indigo
+      primary: deep purple
+      accent: deep orange
   font:
     text: Roboto
     code: Roboto Mono
   favicon: assets/favicon.png
   icon:
     logo: material/book-open-page-variant
+    repo: fontawesome/brands/github
+  language: en
 
 # Extensions
 markdown_extensions:
@@ -87,25 +113,45 @@ markdown_extensions:
 # Plugins
 plugins:
   - search
-  - git-revision-date
+  - git-revision-date-localized:
+      enable_creation_date: true
+      fallback_to_build_date: true
+      type: date
   - minify:
       minify_html: true
       minify_js: true
       minify_css: true
   - awesome-pages
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
 
 # Customization
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/usrbinkat
+      name: GitHub
   version:
     provider: mike
+    default: 0.1.0
+  consent:
+    title: Cookie consent
+    description: >- 
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to analyze traffic and understand where our visitors are coming from.
   generator: false
 
 # Custom CSS and JavaScript
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - javascripts/extra.js
 
 # Directory and nav settings
 docs_dir: vault
@@ -115,3 +161,19 @@ nav:
   - Home: index.md
   - Cloud: 
     - Overview: cloud/Cloud Native Tooling.md
+  - Customization:
+    - Overview: customization/index.md
+    - MkDocs Configuration: customization/mkdocs-configuration.md
+    - CSS Styling: customization/css/index.md
+    - HTML Templates: customization/html/index.md
+    - JavaScript: customization/javascript/index.md
+    - Python Integration: customization/python/index.md
+    - Versioning: customization/versioning/index.md
+  - Development:
+    - Overview: development/index.md
+    - Docker Configuration: development/docker.md
+    - Task Runner: development/task-runner.md
+    - Python Configuration: development/python-config.md
+    - Git Configuration: development/git-config.md
+    - Editor Configuration: development/editor-config.md
+    - Documentation Files: development/documentation.md
