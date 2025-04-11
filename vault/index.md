@@ -2,12 +2,21 @@
 
 Welcome to Obelisk - an Obsidian vault to MkDocs Material Theme site generator.
 
+---
+
+**Categories**: documentation 📚 • boilerplate 📦 • mkdocs 🛠️ • obsidian 📝
+
+---
+
 ## Overview
 
 Obelisk transforms your Obsidian vault into a beautifully rendered static site using MkDocs with the Material theme. It features built-in AI capabilities through integration with Ollama and Open WebUI.
 
 !!! note "Project Status"
     Obelisk is currently in active development. This documentation will be updated as new features are added.
+
+!!! tip "Quick Setup"
+    Get started quickly with just a few commands! See the [Quick Start](#quick-start) section below.
 
 ## Key Features
 

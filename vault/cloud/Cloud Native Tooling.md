@@ -2,6 +2,12 @@
 
 A collection of cloud-native tools and resources.
 
+---
+
+**Categories**: cloud ☁️ • kubernetes 🚢 • devops 🔄 • infrastructure 🏗️
+
+---
+
 ## Kubernetes
 
 !!! info "Kubernetes"
