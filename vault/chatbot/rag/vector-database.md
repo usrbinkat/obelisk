@@ -99,3 +99,89 @@ Database performance will be optimized for different deployment scenarios:
 - **Medium sites**: Local persistent database
 - **Large sites**: Dedicated database service
 - **Multi-user deployments**: Shared database with caching
+
+## Alternative Databases
+
+While ChromaDB is the default vector database for Obelisk's RAG implementation, several alternatives can be considered for different use cases:
+
+### Qdrant
+
+**Benefits for Obelisk:**
+- High-performance search with HNSW algorithm
+- Powerful filtering capabilities
+- Cloud-hosted or self-hosted options
+- Strong scaling capabilities
+
+**Integration Example:**
+```python
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+
+# Initialize Qdrant client
+client = QdrantClient(host="localhost", port=6333)
+
+# Create collection for Obelisk embeddings
+client.create_collection(
+    collection_name="obelisk_docs",
+    vectors_config=models.VectorParams(
+        size=768,  # Embedding dimensions
+        distance=models.Distance.COSINE
+    )
+)
+
+# Store embeddings
+client.upload_points(
+    collection_name="obelisk_docs",
+    points=[
+        models.PointStruct(
+            id=chunk_id,
+            vector=embedding,
+            payload={"text": text, "metadata": metadata}
+        )
+        for chunk_id, embedding, text, metadata in zip(ids, embeddings, texts, metadatas)
+    ]
+)
+```
+
+### Milvus
+
+**Benefits for Obelisk:**
+- Cloud-native architecture
+- Handles billions of vectors
+- Excellent for large documentation sites
+- Advanced query capabilities
+
+**When to choose Milvus:**
+- Your documentation exceeds 100,000 pages
+- You need multi-tenant isolation
+- You require complex metadata filtering
+- Enterprise deployment with high availability requirements
+
+### FAISS (with SQLite)
+
+**Benefits for Obelisk:**
+- Extremely lightweight
+- Optimized for in-memory performance
+- No additional services required
+- Perfect for small to medium documentation
+
+**Integration approach:**
+- Store vectors in FAISS
+- Use SQLite for metadata and text storage
+- Join results using document IDs
+
+### Configuring Alternative Databases
+
+To use an alternative vector database with Obelisk:
+
+```yaml
+# In a future configuration file
+rag:
+  vector_db:
+    type: "qdrant"  # Options: chroma, qdrant, milvus, faiss
+    connection:
+      host: "localhost"
+      port: 6333
+    collection: "obelisk_docs"
+    embedding_dimensions: 768
+```
