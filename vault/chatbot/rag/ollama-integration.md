@@ -185,3 +185,90 @@ Important security aspects of the Ollama integration:
 3. **Output filtering**: Filter sensitive information from responses
 4. **Network isolation**: Restrict network access to the Ollama API
 5. **Authentication**: Add optional authentication for API access
+
+## Advanced Models
+
+Obelisk's RAG system supports various advanced models through Ollama integration, each offering different capabilities and performance characteristics.
+
+### Recommended Models
+
+| Model | Size | Use Case | Performance |
+|-------|------|----------|-------------|
+| Llama3 | 8B | General purpose, balanced | Good general performance |
+| Phi-3-mini | 3.8B | Lightweight, efficient | Excellent for resource-constrained systems |
+| Mistral | 7B | Technical content | Strong reasoning capabilities |
+| Mixtral | 8x7B | Complex questions | High quality with MoE architecture |
+| DeepSeek Coder | 6.7B | Code-focused | Excellent for developer documentation |
+
+### Model Configuration
+
+Advanced models can be configured in various ways:
+
+```bash
+# Pull recommended models
+ollama pull llama3
+ollama pull phi:latest
+ollama pull mistral
+ollama pull mixtral
+ollama pull deepseek-coder
+
+# Configure Obelisk to use a specific model
+export OLLAMA_MODEL="mixtral"
+obelisk-rag config --set "ollama_model=mixtral"
+```
+
+### Custom Model Parameters
+
+For advanced users, Obelisk allows customizing model parameters:
+
+```yaml
+# Example future configuration
+rag:
+  ollama:
+    model: "llama3"
+    parameters:
+      temperature: 0.1
+      top_p: 0.9
+      top_k: 40
+      num_ctx: 8192
+      repeat_penalty: 1.1
+```
+
+### Multi-Model Strategy
+
+The RAG system can use different models for different types of queries:
+
+1. **Technical questions**: Use models like Mistral or DeepSeek Coder
+2. **General questions**: Use Llama3 or Phi-3
+3. **Complex reasoning**: Use Mixtral or larger variants
+
+To implement a multi-model strategy, you can use the model selection feature:
+
+```bash
+# Different models for different queries
+obelisk-rag query "How do I use Docker with Obelisk?" --model deepseek-coder
+obelisk-rag query "Explain the architecture of Obelisk" --model mixtral
+```
+
+### GPU Acceleration
+
+For optimal performance with advanced models, GPU acceleration is recommended:
+
+1. **NVIDIA GPUs**: Fully supported through CUDA
+2. **AMD GPUs**: Experimental support through ROCm
+3. **Metal (Apple Silicon)**: Native support on Mac
+
+Configure GPU usage with:
+
+```bash
+# Enable GPU acceleration in docker-compose.yml
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+```

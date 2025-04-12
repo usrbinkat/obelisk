@@ -4,12 +4,13 @@ Obelisk includes integration with Ollama and Open WebUI to provide AI-powered ch
 
 ## Overview
 
-The chatbot integration consists of two key components:
+The chatbot integration consists of three key components:
 
 1. **Ollama**: A lightweight, local AI model server that runs models like Llama2, Mistral, and others.
 2. **Open WebUI**: A web interface for interacting with the AI models served by Ollama.
+3. **RAG System**: A Retrieval Augmented Generation system that enhances responses with content from your documentation.
 
-Together, these services provide a complete AI chat experience that can be customized to your documentation needs.
+Together, these services provide a complete AI chat experience that is directly connected to your documentation content, providing accurate, contextually relevant answers.
 
 ## How It Works
 
@@ -19,16 +20,21 @@ The chatbot integration uses Docker Compose to orchestrate the services:
 graph TD
     User[User] --> WebUI[Open WebUI]
     WebUI --> Ollama[Ollama Model Server]
+    WebUI --> RAG[RAG System]
+    RAG --> Ollama
+    RAG --> VectorDB[(Vector Database)]
     Ollama --> Models[(AI Models)]
     WebUI --> Config[(Configuration)]
     User --> Obelisk[Obelisk Docs]
     Obelisk --> DocContent[(Documentation Content)]
+    DocContent --> RAG
 ```
 
 1. Users interact with the Open WebUI interface at `http://localhost:8080`
-2. Open WebUI communicates with the Ollama server to process queries
-3. Ollama loads and runs AI models to generate responses
-4. The Obelisk documentation server runs independently at `http://localhost:8000`
+2. Queries can be processed either directly by Ollama or through the RAG system
+3. When using RAG, the system retrieves relevant content from your documentation
+4. Ollama loads and runs AI models to generate responses enhanced with your content
+5. The Obelisk documentation server runs independently at `http://localhost:8000`
 
 ## Services Configuration
 
@@ -129,6 +135,30 @@ You can customize the chat experience by:
 
 1. Configuring Open WebUI settings through the interface
 2. Creating custom model configurations
-3. Training models on your documentation content
+3. Using the RAG system to enhance responses with your documentation
+4. Customizing the RAG system parameters for better retrieval
 
-See the [Open WebUI documentation](https://github.com/open-webui/open-webui) and [Ollama documentation](https://github.com/ollama/ollama) for more details.
+See the [Open WebUI documentation](https://github.com/open-webui/open-webui), [Ollama documentation](https://github.com/ollama/ollama), and our [RAG documentation](rag/index.md) for more details.
+
+## RAG System Integration
+
+The Retrieval Augmented Generation (RAG) system enhances your chatbot with knowledge from your documentation:
+
+1. **Index your documentation**:
+   ```bash
+   obelisk-rag index
+   ```
+
+2. **Start the RAG API server**:
+   ```bash
+   obelisk-rag serve --watch
+   ```
+
+3. **In Open WebUI, add a new API-based model**:
+   - Name: "Obelisk RAG"
+   - Base URL: "http://localhost:8000"
+   - API Path: "/query"
+   - Request Format: `{"query": "{prompt}"}`
+   - Response Path: "response"
+
+For detailed instructions on setting up and using the RAG system, see the [RAG Getting Started Guide](rag/getting-started.md) and [Using RAG](rag/using-rag.md).

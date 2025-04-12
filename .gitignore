@@ -51,3 +51,7 @@ replit.nix
 prof/.envrc
 .envrc
 .mcp.json
+
+# RAG system
+.obelisk/
+.chroma/

@@ -23,11 +23,21 @@ dependencies = [
     "mike>=1.1.2,<2.0.0",
     "pymdown-extensions>=10.5,<11.0.0",
     "pillow>=10.2.0,<11.0.0",
-    "pyyaml>=6.0.1,<7.0.0"
+    "pyyaml>=6.0.1,<7.0.0",
+    "langchain>=0.1.0",
+    "langchain-community>=0.1.0",
+    "langchain-ollama>=0.0.1",
+    "chromadb>=0.4.24",
+    "watchdog>=3.0.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+    "pydantic>=2.5.0",
+    "langchain-chroma (>=0.2.2,<0.3.0)"
 ]
 
 [project.scripts]
 obelisk = "obelisk.cli:main"
+obelisk-rag = "obelisk.rag.cli:main"
 
 [tool.black]
 line-length = 88
@@ -38,3 +48,6 @@ line-length = 88
 target-version = "py312"
 select = ["E", "F", "I", "W"]
 ignore = []
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+

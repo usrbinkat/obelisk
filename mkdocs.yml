@@ -175,6 +175,10 @@ nav:
       - Ollama Integration: chatbot/rag/ollama-integration.md
       - Implementation Guide: chatbot/rag/implementation.md
       - Evaluation: chatbot/rag/evaluation.md
+      - Getting Started: chatbot/rag/getting-started.md
+      - Using RAG: chatbot/rag/using-rag.md
+      - MVP Status: chatbot/rag/mvp-status.md
+      - MVP Roadmap: chatbot/rag/mvp.md
   - Customization:
     - Overview: customization/index.md
     - MkDocs Configuration: customization/mkdocs-configuration.md

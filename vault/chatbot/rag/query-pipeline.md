@@ -126,6 +126,42 @@ Respond in a helpful, concise manner. Include code examples if relevant.
 Always cite your sources using the document names provided in the retrieved chunks.
 ```
 
+## Customizing Prompts
+
+The Obelisk RAG system allows for prompt template customization to better fit specific use cases:
+
+### Template Variables
+
+You can use the following variables in your prompt templates:
+
+- `{user_question}`: The original question asked by the user
+- `{retrieved_context}`: The full context assembled from retrieved chunks
+- `{retrieved_chunks}`: An array of individual content chunks with metadata
+- `{chunk_count}`: The number of chunks retrieved
+- `{confidence_score}`: The confidence score of the retrieval
+
+### Custom Prompt Configuration
+
+Prompt templates can be customized through environment variables or the configuration API:
+
+```bash
+# Set a custom prompt template
+export OBELISK_PROMPT_TEMPLATE="You are an Obelisk expert. Use the following information to answer the question:\n\n{retrieved_context}\n\nQuestion: {user_question}\n\nAnswer:"
+
+# Or using the config API
+obelisk-rag config --set "prompt_template=You are an Obelisk expert. Use the following information to answer the question:\n\n{retrieved_context}\n\nQuestion: {user_question}\n\nAnswer:"
+```
+
+### Advanced Prompt Engineering Techniques
+
+For optimal RAG performance, consider these prompt engineering practices:
+
+1. **Clear instructions**: Include specific instructions on how to use the context
+2. **Context formatting**: Format the context for better readability by the model
+3. **Response formatting**: Specify desired response format (bullets, paragraphs, etc.)
+4. **Source attribution**: Instruct the model to cite sources from the retrieved chunks
+5. **Fallback handling**: Guide how to respond when information is not in the context
+
 ## Response Generation
 
 The final step involves:
