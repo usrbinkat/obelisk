@@ -1,6 +1,6 @@
 # Retrieval Augmented Generation (RAG)
 
-This section outlines the future RAG pipeline for Obelisk, which will enable the chatbot to retrieve and reference content directly from your documentation.
+This section outlines the RAG pipeline for Obelisk, which enables the chatbot to retrieve and reference content directly from your documentation.
 
 ## What is RAG?
 
@@ -11,7 +11,7 @@ Retrieval Augmented Generation (RAG) is a technique that enhances Large Language
 
 For Obelisk, this means the AI chatbot will be able to answer questions based specifically on your documentation content.
 
-## Planned RAG Architecture
+## RAG Architecture
 
 The Obelisk RAG pipeline will consist of several key components:
 
@@ -43,10 +43,10 @@ The RAG pipeline will be implemented in phases:
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 1 | Document Processing Pipeline | Planned |
-| 2 | Vector Database Integration | Planned |
-| 3 | Query Processing & Retrieval | Planned |
-| 4 | Integration with Ollama | Planned |
+| 1 | Document Processing Pipeline | Completed ✓ |
+| 2 | Vector Database Integration | Completed ✓ |
+| 3 | Query Processing & Retrieval | Completed ✓ |
+| 4 | Integration with Ollama | Completed ✓ |
 | 5 | Web UI Extensions | Planned |
 
 ## Document Processing
@@ -56,21 +56,38 @@ The RAG pipeline will be implemented in phases:
 The RAG pipeline will extract content from your Obsidian vault:
 
 ```python
-# Future implementation example
-def extract_content(vault_path):
-    """Extract content from Markdown files in the vault."""
-    all_content = []
-    for md_file in glob.glob(f"{vault_path}/**/*.md", recursive=True):
-        with open(md_file, 'r') as f:
+# Implemented in obelisk/rag/document.py
+class DocumentProcessor:
+    """Process markdown documents for the RAG system."""
+    
+    def process_directory(self, directory: str = None) -> List[Document]:
+        """Process all markdown files in a directory."""
+        if directory is None:
+            directory = self.config.get("vault_dir")
+        
+        all_chunks = []
+        for md_file in glob.glob(f"{directory}/**/*.md", recursive=True):
+            chunks = self.process_file(md_file)
+            all_chunks.extend(chunks)
+        
+        return all_chunks
+    
+    def process_file(self, file_path: str) -> List[Document]:
+        """Process a single markdown file."""
+        # Read and process the file
+        with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            # Process frontmatter and content
-            metadata, text = process_markdown(content)
-            all_content.append({
-                'source': md_file,
-                'metadata': metadata,
-                'content': text
-            })
-    return all_content
+        
+        # Create a Document object with metadata
+        doc = Document(page_content=content, metadata={"source": file_path})
+        
+        # Extract YAML frontmatter as metadata
+        self._extract_metadata(doc)
+        
+        # Split into chunks with overlap
+        chunks = self.text_splitter.split_documents([doc])
+        
+        return chunks
 ```
 
 ### Chunking Strategies

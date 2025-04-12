@@ -5,27 +5,22 @@ Based on our research and requirements, this document outlines a focused MVP roa
 ## Development Checklist
 
 ### Prerequisites
-- [ ] Pull required embedding and LLM models:
+- [x] Pull required embedding and LLM models:
   ```bash
   ollama pull llama3
   ollama pull mxbai-embed-large
   ```
+  > Completed on 2025-04-11. Models are available via Ollama Docker container. The embedding model is 669MB, and the LLM is 4.7GB.
 
 ### Phase 1: Project Setup & Dependencies
-- [ ] Create module structure in `obelisk/rag/`
-- [ ] Update `pyproject.toml` with RAG dependencies:
-  ```
-  langchain
-  langchain-community
-  langchain-ollama
-  chromadb
-  watchdog
-  fastapi
-  uvicorn
-  pydantic
-  ```
+- [x] Create module structure in `obelisk/rag/`
+  > Created initial file structure on 2025-04-11, but implementation needs testing and refinement.
+- [x] Update `pyproject.toml` with RAG dependencies
+  > Added dependencies on 2025-04-11 and updated with Poetry. Successfully installed langchain, langchain-community, langchain-ollama, chromadb, watchdog, fastapi, uvicorn, and pydantic.
 - [ ] Create basic configuration system for RAG settings
+  > Initial configuration class created but needs testing with actual environment.
 - [ ] Add initial unit tests structure
+  > Test directory structure created but no actual tests implemented yet.
 
 ### Phase 2: Document Processing Pipeline
 - [ ] Implement document loader for Markdown files
