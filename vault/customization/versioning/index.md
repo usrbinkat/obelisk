@@ -95,7 +95,7 @@ The current version is displayed in the announcement banner:
 {% block announce %}
   <a href="https://github.com/usrbinkat/obelisk">
     <span class="twemoji">{% include ".icons/fontawesome/brands/github.svg" %}</span>
-    <strong>Obelisk v0.1.0</strong> released - Start your Obelisk now
+    <strong>Obelisk v0.1.0 </strong>&nbsp;released - Start your Obelisk now
   </a>
 {% endblock %}
 ```
