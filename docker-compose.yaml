@@ -7,6 +7,11 @@ services:
       - OLLAMA_API_BASE_URL=http://ollama:11434
       - OLLAMA_API_URL=http://ollama:11434
       - LOG_LEVEL=debug
+      # RAG configuration
+      - RAG_ENABLED=true
+      - RAG_SERVICE_TYPE=custom
+      - RAG_SERVICE_URL=http://obelisk-rag:8000/v1
+      - "RAG_TEMPLATE=You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question. If you don't know the answer, just say that you don't know.\n\nContext:\n{{context}}\n\nUser question: {{query}}"
     volumes:
       - data:/data
       - models:/models
@@ -20,6 +25,7 @@ services:
         max-file: "2"
     depends_on:
       - ollama
+      - obelisk-rag
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
