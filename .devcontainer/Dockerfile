@@ -85,17 +85,34 @@ USER ubuntu
 
 ###################################################################################
 # Install additional dependencies by extending the base image
-#ARG DEBIAN_FRONTEND=noninteractive
-#ARG APT_PACKAGES="\
-#htop \
-#"
-#
-#RUN set -ex \
-#    && apt-get update \
-#    && apt-get install -y $APT_PACKAGES \
-#    && apt-get clean \
-#    && rm -rf /var/lib/apt/lists/* \
-#    && echo
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_PACKAGES="\
+htop \
+chromium-browser \
+libgtk-4-1 \
+libvulkan1 \
+libgraphene-1.0-0 \
+libxslt1.1 \
+libvpx9 \
+libevent-2.1-7 \
+libopus0 \
+libwebpmux3 \
+libxkbcommon-x11-0 \
+libgles2 \
+gstreamer1.0-plugins-base \
+gstreamer1.0-plugins-good \
+gstreamer1.0-plugins-bad \
+libgstreamer1.0-0 \
+gstreamer1.0-libav \
+"
+
+RUN set -ex \
+    && apt-get update \
+    && apt-get install -y $APT_PACKAGES \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo \
+    && echo "PUPPETEER_DEPENDENCIES_INSTALLED=true"
 
 ###################################################################################
 ## Install Google Cloud SDK

@@ -1,4 +1,3 @@
-# https://gist.githubusercontent.com/usrbinkat/de44facc683f954bf0cca6c87e2f9f88/raw/0402e8441de57ccd8b00fe0db8ad40cae7d5fdb8/docker-compose.yaml
 services:
   open-webui:
     container_name: open-webui
@@ -57,27 +56,60 @@ services:
       - ollama-net
     restart: unless-stopped
 
+  # For devcontainer use, we build the obelisk container with the files copied in
+  # rather than mounted, to avoid WSL/devcontainer mounting issues
   obelisk:
     container_name: obelisk
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - ./vault:/app/vault
-      - ./mkdocs.yml:/app/mkdocs.yml
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
+    # No volume mounts for mkdocs.yml to avoid mount errors in devcontainer
     ports:
       - "8000:8000"
     networks:
       - ollama-net
     restart: unless-stopped
+    command: ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+
+  obelisk-rag:
+    container_name: obelisk-rag
+    build:
+      context: .
+      dockerfile: Dockerfile.rag
+    volumes:
+      - rag-data:/app/data
+      - rag-vault:/app/vault
+    ports:
+      - "8001:8000"
+    environment:
+      - VAULT_DIR=/app/vault
+      - CHROMA_DIR=/app/data/chroma_db
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3
+      - EMBEDDING_MODEL=mxbai-embed-large
+      - RETRIEVE_TOP_K=3
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+    depends_on:
+      - ollama
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 volumes:
   data:
   models:
   ollama:
   open-webui:
+  rag-data:
+  rag-vault:
 
 networks:
   ollama-net:
