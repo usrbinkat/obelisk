@@ -282,6 +282,21 @@ def handle_serve(args):
             logger.error(f"Error processing query: {e}")
             raise HTTPException(status_code=500, detail=str(e))
     
+    # Add OpenAI-compatible API endpoints
+    try:
+        from obelisk.rag.api import setup_openai_api
+        setup_openai_api(app)
+        print("OpenAI-compatible API endpoints configured at /v1/chat/completions")
+        
+        # Add manual route listing for debugging
+        print("All registered routes:")
+        for route in app.routes:
+            print(f"  {', '.join(route.methods) if hasattr(route, 'methods') else 'N/A'} {route.path}")
+    except Exception as e:
+        logger.error(f"Error setting up OpenAI API: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+    
     # Start the server
     host = service.config.get("api_host")
     port = int(service.config.get("api_port"))
