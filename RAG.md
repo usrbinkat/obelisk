@@ -172,3 +172,23 @@ The Docker environment consists of several integrated services:
 - **open-webui**: Web interface for interacting with Ollama models directly
 - **obelisk**: Documentation site built with MkDocs
 - **obelisk-rag**: RAG service that connects to Ollama and provides document search capabilities
+
+## Integrating with Open WebUI
+
+Open WebUI is configured to use the RAG service through environment variables in the docker-compose.yaml file:
+
+```yaml
+environment:
+  # RAG configuration
+  - RAG_ENABLED=true
+  - RAG_SERVICE_TYPE=custom
+  - RAG_SERVICE_URL=http://obelisk-rag:8000
+  - RAG_TEMPLATE=You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question. If you don't know the answer, just say that you don't know.
+
+    Context:
+    {{context}}
+
+    User question: {{query}}
+```
+
+This allows users to access the RAG capabilities directly through the Open WebUI interface at http://localhost:8080. When asking questions, the WebUI will automatically retrieve relevant context from the indexed documentation and include it in the prompt to the language model.
