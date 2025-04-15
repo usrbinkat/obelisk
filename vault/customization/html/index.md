@@ -24,7 +24,7 @@ The primary template override is `main.html`, which extends the base template an
 {% block announce %}
   <a href="https://github.com/usrbinkat/obelisk">
     <span class="twemoji">{% include ".icons/fontawesome/brands/github.svg" %}</span>
-    <strong>Obelisk v0.1.0</strong> released - Start your Obelisk now
+    <strong>Obelisk v0.1.0 </strong>&nbsp;released - Start your Obelisk now
   </a>
 {% endblock %}
 
@@ -58,7 +58,7 @@ The announcement banner is customized to display the current Obelisk version wit
 {% block announce %}
   <a href="https://github.com/usrbinkat/obelisk">
     <span class="twemoji">{% include ".icons/fontawesome/brands/github.svg" %}</span>
-    <strong>Obelisk v0.1.0</strong> released - Start your Obelisk now
+    <strong>Obelisk v0.1.0 </strong>&nbsp;released - Start your Obelisk now
   </a>
 {% endblock %}
 ```
