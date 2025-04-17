@@ -21,14 +21,15 @@ The Obelisk RAG system provides document indexing, vector storage, and query cap
 | Feature | Documentation | Status |
 |---------|---------------|--------|
 | Native API | [using-rag.md](./using-rag.md) | ✅ Implemented |
-| OpenAI-compatible API | [using-rag.md](./using-rag.md) (needs update) | ✅ Implemented |
+| OpenAI-compatible API | [using-rag.md](./using-rag.md) | ✅ Implemented |
 | Ollama Integration | [ollama-integration.md](./ollama-integration.md) | ✅ Implemented |
-| OpenWebUI Integration | *To be created* | ✅ Implemented |
+| OpenWebUI Integration | [openwebui-integration.md](./openwebui-integration.md) | ✅ Implemented |
 
 ### User Guides
 
-- [getting-started.md](./getting-started.md) - Step-by-step guide for first-time setup
+- [getting-started.md](./getting-started.md) - Step-by-step guide with RAG overview and first-time setup
 - [using-rag.md](./using-rag.md) - Comprehensive usage documentation with examples
+- [implementation-status.md](./implementation-status.md) - Current implementation status and roadmap
 
 ## Vector Database Implementation
 
@@ -39,21 +40,31 @@ The current implementation uses ChromaDB for vector storage. Future development 
 | ChromaDB | Current Implementation | [vector-database.md](./vector-database.md) |
 | Milvus Lite | Future Roadmap | [vector-database.md](./vector-database.md) |
 
-## Documentation Priorities
+## Documentation Progress
 
-Based on the analysis in `task.md`, these documentation areas need immediate attention:
+Based on the analysis in `task.md`, we've made significant improvements to the documentation:
 
-1. **OpenAI-compatible API documentation**
-   - Update `using-rag.md` to include the OpenAI-compatible endpoint
-   - Document request/response format and integration examples
+### Completed Tasks
 
-2. **Create OpenWebUI integration documentation**
-   - Create `openwebui-integration.md` with comprehensive setup and usage instructions
-   - Include configuration examples and common patterns
+✅ **High Priority**
+- Added OpenAI-compatible API documentation to `using-rag.md`
+- Created comprehensive `openwebui-integration.md` documentation
+- Updated vector database documentation to reflect ChromaDB implementation
+- Fixed WebUI integration inconsistencies
 
-3. **ChromaDB implementation details**
-   - Ensure `vector-database.md` and `implementation.md` accurately reflect the current ChromaDB implementation
-   - Maintain Milvus documentation as a future roadmap item
+✅ **Medium Priority**
+- Updated query endpoint format documentation with proper JSON formats
+- Fixed environment variable inconsistencies (`OLLAMA_URL` vs `OLLAMA_API_URL`)
+- Added detailed document chunking documentation to `implementation.md`
+- Documented error handling strategies and debug mode
+
+### All Tasks Completed ✅
+
+1. **Low Priority Items**
+   - ✅ Document the discrepancy between documented embedding batching and implementation
+   - ✅ Update roadmap documentation to clearly mark implemented vs. planned features in architecture-draft.md
+   - ✅ Add debug mode documentation
+   - ✅ Improve troubleshooting guidance with more examples in using-rag.md
 
 ## Documentation Maintenance Guidelines
 
@@ -77,10 +88,10 @@ When updating the RAG documentation, follow these principles:
 
 ## Related Documentation
 
-Architecture documentation and detailed roadmap information can be found in separate sections of the documentation, while this directory focuses specifically on the practical implementation and usage of the RAG system:
+Architecture documentation and detailed implementation information can be found in separate files:
 
-- Architecture design (`../architecture/rag-architecture.md`) - *Path may vary based on documentation reorganization*
-- Implementation roadmap (`../roadmap/rag-roadmap.md`) - *Path may vary based on documentation reorganization*
+- [architecture-draft.md](./architecture-draft.md) - Technical architecture with implementation status markers
+- [implementation-status.md](./implementation-status.md) - Implementation roadmap and current status
 
 ## Implementation Notes
 

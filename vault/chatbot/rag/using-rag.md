@@ -175,6 +175,26 @@ The API server provides the following endpoints:
 
 2. **POST /query**
    - Processes a query using the RAG system
+   - Request format:
+     ```json
+     {
+       "query": "What is Obelisk?"  // Required: The query text
+     }
+     ```
+   - Response format:
+     ```json
+     {
+       "query": "What is Obelisk?",
+       "response": "Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites...",
+       "sources": [
+         {
+           "content": "Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites...",
+           "source": "index.md"
+         }
+       ],
+       "no_context": false
+     }
+     ```
    - Example:
      ```bash
      curl -X POST http://localhost:8000/query \
@@ -182,9 +202,79 @@ The API server provides the following endpoints:
        -d '{"query": "What is Obelisk?"}'
      ```
 
+3. **POST /v1/chat/completions**
+   - OpenAI-compatible endpoint for chat completions
+   - Enables integration with tools expecting OpenAI API format
+   - Example:
+     ```bash
+     curl -X POST http://localhost:8000/v1/chat/completions \
+       -H "Content-Type: application/json" \
+       -d '{
+         "model": "obelisk-rag",
+         "messages": [
+           {"role": "user", "content": "What is Obelisk?"}
+         ],
+         "temperature": 0.7
+       }'
+     ```
+
+#### OpenAI-Compatible API Details
+
+The `/v1/chat/completions` endpoint implements the OpenAI Chat API format, allowing seamless integration with applications that support OpenAI's API.
+
+**Request Format:**
+```json
+{
+  "model": "string",
+  "messages": [
+    {
+      "role": "user|system|assistant",
+      "content": "string"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": null,
+  "stream": false
+}
+```
+
+Field descriptions:
+- `model`: Identifier for the model (can be any string, used for tracking)
+- `messages`: Array of message objects with roles and content
+- `temperature`: Controls randomness in response generation (0-1)
+- `max_tokens`: Maximum tokens to generate (optional)
+- `stream`: Whether to stream the response (default: false)
+
+**Response Format:**
+```json
+{
+  "id": "rag-chat-completion-12345",
+  "object": "chat.completion",
+  "created": 1683494100,
+  "model": "obelisk-rag",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites with AI integration."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 20,
+    "total_tokens": 30
+  }
+}
+```
+
+Note that the RAG system extracts the query from the last user message in the `messages` array and processes it through the RAG pipeline before generating a response.
+
 ## Integration with Open WebUI
 
-You can integrate the RAG API with Open WebUI to enhance the chat interface with your documentation.
+You can integrate the RAG API with Open WebUI using the OpenAI-compatible endpoint for a more seamless experience.
 
 ### Setup
 
@@ -193,19 +283,22 @@ You can integrate the RAG API with Open WebUI to enhance the chat interface with
    obelisk-rag serve --watch
    ```
 
-2. In Open WebUI, add a new API-based model:
-   - Name: "Obelisk RAG"
-   - Base URL: "http://localhost:8000"
-   - API Path: "/query"
-   - Request Format:
-     ```json
-     {
-       "query": "{prompt}"
-     }
-     ```
-   - Response Path: "response"
+2. In your docker-compose.yaml, configure Open WebUI to use the RAG service:
+   ```yaml
+   services:
+     open-webui:
+       # ... other configuration ...
+       environment:
+         # ... other environment variables ...
+         - RAG_ENABLED=true
+         - RAG_SERVICE_TYPE=custom
+         - RAG_SERVICE_URL=http://obelisk-rag:8000/v1
+         - "RAG_TEMPLATE=You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question.\n\nContext:\n{{context}}\n\nUser question: {{query}}"
+   ```
 
-3. Select the "Obelisk RAG" model in the chat interface
+3. Select any model in the Open WebUI interface
+
+For more detailed integration instructions, see [OpenWebUI Integration](openwebui-integration.md).
 
 Now your chat interface will provide responses based on your documentation!
 
@@ -234,14 +327,143 @@ obelisk-rag serve --watch
 
 This is useful during development when you're actively updating your documentation.
 
-## Debugging
+## Troubleshooting and Debugging
 
-If you encounter issues, you can enable debug mode:
+The RAG system includes built-in debugging capabilities to help diagnose issues. When you encounter problems, you can enable debug mode for detailed error information:
 
 ```bash
 # Enable debug mode
 export RAG_DEBUG=1
 obelisk-rag query "Why isn't this working?"
+```
+
+### Common Issues and Solutions
+
+#### Connection Issues with Ollama
+
+If you see errors connecting to Ollama:
+
+```
+Error: HTTPConnectionError: Connection error when connecting to Ollama service
+```
+
+Debug with:
+
+```bash
+# Check Ollama connection
+export RAG_DEBUG=1
+curl -v http://localhost:11434/api/embeddings
+```
+
+**Solution**: Ensure Ollama is running and properly configured:
+```bash
+# Check if Ollama is running
+docker ps | grep ollama
+
+# If not running, start it
+docker-compose up -d ollama
+
+# Update configuration with correct URL
+obelisk-rag config --set "ollama_url=http://localhost:11434"
+```
+
+#### Vector Database Errors
+
+If you experience vector database issues:
+
+```
+Error: Failed to connect to vector database
+```
+
+Debug with:
+
+```bash
+# Enable debug mode and check stats
+export RAG_DEBUG=1
+obelisk-rag stats
+```
+
+**Solution**: Verify the vector database directory exists and has proper permissions:
+```bash
+# Check vector database directory
+ls -la ./.obelisk/vectordb
+
+# If missing, create it
+mkdir -p ./.obelisk/vectordb
+```
+
+#### Document Processing Issues
+
+If documents aren't being indexed properly:
+
+```
+Error: No chunks generated from document processing
+```
+
+Debug with:
+
+```bash
+# Process a single file with debug mode
+export RAG_DEBUG=1
+obelisk-rag index --vault /path/to/specific/file.md
+```
+
+**Solution**: Check the file format and ensure it's valid markdown:
+```bash
+# Validate markdown syntax
+npx markdownlint /path/to/specific/file.md
+```
+
+### Using Debug Traces for Advanced Troubleshooting
+
+When debug mode is enabled, the system provides full tracebacks for errors. These tracebacks can help identify the root cause of issues:
+
+```bash
+# Run with debug mode
+export RAG_DEBUG=1
+obelisk-rag serve
+
+# Example traceback output:
+# Traceback (most recent call last):
+#   File "/app/obelisk/rag/cli.py", line 334, in main
+#     handle_serve(args)
+#   File "/app/obelisk/rag/cli.py", line 224, in handle_serve
+#     service = RAGService(RAGConfig(config))
+#   ...
+```
+
+### Checking Component Status
+
+Debug integration issues by examining each component:
+
+```bash
+# Check embedding service
+export RAG_DEBUG=1
+obelisk-rag query "test" --json | grep embedding
+
+# Check document processor 
+export RAG_DEBUG=1
+obelisk-rag stats
+
+# Examine API endpoints
+export RAG_DEBUG=1
+obelisk-rag serve
+# Look for "Available route:" messages in the output
+```
+
+### Debug Mode in Docker Environment
+
+If running in Docker, use:
+
+```bash
+# Set debug environment variable in docker-compose.yaml
+services:
+  obelisk:
+    environment:
+      - RAG_DEBUG=1
+
+# Or set it when running a command in the container
+docker exec -it obelisk bash -c "export RAG_DEBUG=1 && obelisk-rag query 'test query'"
 ```
 
 ## Architecture

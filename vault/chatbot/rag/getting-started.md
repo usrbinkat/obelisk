@@ -1,11 +1,59 @@
 ---
 title: Getting Started with RAG
-date: 2025-04-11
+date: 2025-04-17
 ---
 
 # Getting Started with Obelisk RAG
 
 This guide will help you get started with the Retrieval Augmented Generation (RAG) system in Obelisk. We'll walk through the process of setting up your environment, initializing the system, and making your first query.
+
+## What is RAG?
+
+Retrieval Augmented Generation (RAG) is a technique that enhances Large Language Models (LLMs) by providing them with relevant information retrieved from a knowledge base before generating responses. This approach combines the strengths of:
+
+1. **Retrieval systems** - Finding relevant content from your knowledge base
+2. **Generation capabilities** - Using that content to produce accurate, contextual responses
+
+For Obelisk, this means the AI chatbot will be able to answer questions based specifically on your documentation content.
+
+## RAG Architecture
+
+The Obelisk RAG pipeline consists of several key components:
+
+```mermaid
+graph TD
+    A[Documentation Files] -->|Extraction| B[Content Processor]
+    B -->|Chunking| C[Text Chunks]
+    C -->|Embedding Generation| D[Vector Database]
+    E[User Query] -->|Query Processing| F[Query Embeddings]
+    D -->|Similarity Search| G[Relevant Chunks]
+    F -->|Search| G
+    G -->|Context Assembly| H[Prompt Assembly]
+    H -->|LLM Input| I[Ollama Model]
+    I -->|Response| J[Enhanced Answer]
+```
+
+The RAG pipeline follows these steps:
+1. **Content Processing**: Extract content from Markdown files in your Obsidian vault
+2. **Chunking**: Split content into appropriate segments for embedding
+3. **Embedding Generation**: Convert text chunks into vector embeddings
+4. **Vector Storage**: Store embeddings in a vector database for efficient retrieval
+5. **Query Processing**: Process and embed user queries
+6. **Retrieval**: Find the most relevant document chunks
+7. **Context Assembly**: Combine retrieved content into a prompt
+8. **Response Generation**: Generate accurate responses based on retrieved content
+
+## Implementation Status
+
+The RAG pipeline has been implemented with the following components:
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 1 | Document Processing Pipeline | Completed ✓ |
+| 2 | Vector Database Integration | Completed ✓ |
+| 3 | Query Processing & Retrieval | Completed ✓ |
+| 4 | Integration with Ollama | Completed ✓ |
+| 5 | Web UI Extensions | Planned |
 
 ## Prerequisites
 

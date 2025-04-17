@@ -1,104 +1,141 @@
 # Vector Database Integration
 
-The Obelisk RAG pipeline will require a vector database to store and query document embeddings. This page outlines the planned implementation details.
+The Obelisk RAG pipeline uses a vector database to store and query document embeddings. This page documents the current implementation and future options.
 
-## Vector Database Options
+## Current Implementation: ChromaDB
 
-Several vector database options are being evaluated for integration with Obelisk:
+Obelisk's RAG system currently uses **ChromaDB** as its vector database. ChromaDB was chosen for its:
 
-| Database | Description | Deployment |
-|----------|-------------|------------|
-| Chroma | Lightweight, open-source | Embedded or server |
-| FAISS | Meta's efficient similarity search | In-memory |
-| Qdrant | Scalable vector search engine | Docker container |
-| Weaviate | Knowledge graph + vector search | Docker container |
-| Milvus | Distributed vector database | Kubernetes or Docker |
+- Lightweight embeddable architecture
+- Ease of integration with LangChain
+- Simple persistence model
+- Good performance for small to medium document collections
+- No additional services required (runs in-process)
 
-The initial implementation will likely use **ChromaDB** for its simplicity and easy integration.
+### Configuration
 
-## Embedding Models
+ChromaDB is configured through environment variables or the RAG configuration system:
 
-Document chunks will be converted to vector embeddings using:
+```bash
+# Configure ChromaDB storage location
+export CHROMA_DIR="/path/to/vectordb"
+```
 
-- **Local embedding models** via Ollama (e.g., `nomic-embed-text`)
-- **Optional integration** with OpenAI embeddings for higher quality
+The default storage location is `./.obelisk/vectordb/` in development and `/app/data/chroma_db` in Docker.
+
+### Implementation Details
+
+The current ChromaDB implementation:
+
+- Uses persistent storage at the configured CHROMA_DIR location
+- Stores document content, metadata, and embeddings
+- Utilizes the default ChromaDB collection
+- Filters metadata to ensure compatibility (only primitive types)
+- Provides similarity search with configurable k value (default: 3)
+- Integrates with Ollama's embedding models (default: mxbai-embed-large)
+
+### Limitations
+
+The current implementation has some limitations:
+
+- Limited metadata filtering capabilities
+- No batch optimization for large document sets
+- Basic error handling for database corruption
+- No custom ChromaDB settings for advanced use cases
+
+## Future Vector Database Options
+
+As Obelisk's RAG system evolves, several alternative vector databases are being evaluated for different use cases and scale requirements:
+
+| Database | Description | Use Case |
+|----------|-------------|----------|
+| Milvus | Distributed vector database | Large-scale deployments |
+| FAISS | Meta's efficient similarity search | High-performance requirements |
+| Qdrant | Scalable vector search engine | Advanced filtering needs |
+| Weaviate | Knowledge graph + vector search | Complex semantic relationships |
+
+## Current Embedding Implementation
+
+The current implementation uses:
+
+- **Local embedding models** via Ollama (default: `mxbai-embed-large`)
+- 1024-dimension vectors optimized for semantic similarity
+- Synchronous embedding generation through Ollama's API
 
 ## Database Schema
 
-The vector database will store:
+The ChromaDB instance currently stores:
 
-1. **Document embeddings**: Vector representations of content chunks
-2. **Metadata**: Structured information about each chunk
+1. **Document embeddings**: Vector representations of content chunks (1024-dimensional)
+2. **Metadata**: Basic information about each chunk (source, title, etc.)
 3. **Document content**: The original text for retrieval
 
-Example schema:
+Current metadata schema includes:
 
 ```json
 {
-  "embedding": [0.123, 0.456, ...],  // Vector embedding
   "metadata": {
     "source": "development/docker.md",
     "title": "Docker Configuration",
-    "heading_path": ["Docker Configuration", "Docker Compose Configuration"],
-    "last_updated": "2023-04-15",
-    "tags": ["docker", "configuration"],
     "chunk_id": "dev-docker-compose-001"
   },
   "text": "The `docker-compose.yaml` file orchestrates the complete Obelisk stack, including optional AI components..."
 }
 ```
 
+> Note: Only primitive data types (string, number, boolean) are supported in metadata to ensure ChromaDB compatibility.
+
 ## Storage & Persistence
 
-The vector database will be stored in a configurable location:
+The current ChromaDB implementation uses persistent storage:
 
-- Default: `./.obelisk/vectordb/`
-- Configurable via environment variables or config file
-- Docker volume mount for containerized deployments
+- Default location: `./.obelisk/vectordb/` (development) or `/app/data/chroma_db` (Docker)
+- Configurable via `CHROMA_DIR` environment variable
+- Mounted as a Docker volume in containerized deployments for persistence
+- Uses ChromaDB's built-in persistence mechanism
 
-## Query Optimization
+## Current Query Implementation
 
-Several techniques will optimize retrieval performance:
+The RAG query process:
 
-1. **Filtering**: Pre-filter by metadata before vector search
-2. **Hybrid search**: Combine keyword and semantic search
-3. **Re-ranking**: Two-stage retrieval with initial recall and re-ranking
-4. **Caching**: Frequently accessed embeddings and results
+1. Embed the user query using the same embedding model
+2. Perform similarity search to find the top-k most relevant chunks (default k=3)
+3. Extract and format the retrieved chunks for context
+4. Generate a response using the retrieved context
 
 ## Integration Points
 
-The vector database will integrate with:
+The current vector database integrates with:
 
-- **Obelisk build process**: Generate embeddings during site building
-- **Incremental updates**: Update embeddings when content changes
-- **Ollama API**: Connect with the model server for retrieval
-- **Open WebUI**: Provide context to the chat interface
+- **RAG CLI**: Direct interface for indexing and querying
+- **Document watcher**: Monitors file changes for real-time updates
+- **Ollama API**: Uses Ollama for embeddings and generation
+- **OpenAI-compatible API**: Provides an endpoint for tools like Open WebUI
 
-## Configuration Options
+## Current Configuration Options
 
-Users will be able to configure the vector database through:
+Configure the vector database through environment variables:
 
-```yaml
-# Example future configuration (mkdocs.yml)
-plugins:
-  - obelisk-rag:
-      embedding_model: nomic-embed-text
-      vector_db: chroma
-      vector_db_path: ./.obelisk/vectordb
-      chunk_size: 512
-      chunk_overlap: 128
-      filter_private_content: true
-      incremental_updates: true
+```bash
+# Vector database location
+export CHROMA_DIR="/path/to/db"
+
+# Number of results to retrieve
+export RETRIEVE_TOP_K=5
+
+# Embedding model to use
+export EMBEDDING_MODEL="mxbai-embed-large" 
 ```
 
-## Performance Considerations
+## Future Enhancements
 
-Database performance will be optimized for different deployment scenarios:
+Planned improvements to the vector database implementation:
 
-- **Small sites**: In-memory vector database
-- **Medium sites**: Local persistent database
-- **Large sites**: Dedicated database service
-- **Multi-user deployments**: Shared database with caching
+1. **Advanced Filtering**: Enhanced metadata filtering capabilities
+2. **Hybrid Search**: Combining vector search with keyword search
+3. **Batch Processing**: Optimized handling of large document collections
+4. **Milvus Integration**: Support for Milvus as an alternative backend
+5. **Custom Collection Management**: Multiple collections for different document types
 
 ## Alternative Databases
 
