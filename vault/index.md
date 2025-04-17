@@ -130,6 +130,6 @@ For more information, see the [Development Guide](development/index.md).
 
 Explore our comprehensive documentation:
 - [Chatbot Integration](chatbot/index.md) - AI chat setup and configuration
-- [RAG System](chatbot/rag/index.md) - Retrieval Augmented Generation details
+- [RAG System](chatbot/rag/getting-started.md) - Retrieval Augmented Generation details
 - [Customization](customization/index.md) - Styling and theming options
 - [Development](development/index.md) - Developer guides and references
