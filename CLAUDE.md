@@ -120,6 +120,58 @@ The planned RAG pipeline will allow:
 - Validate HTML templates with proper syntax
 - Test site rendering across different viewports
 
+## Git Commit Standards
+When managing code changes with git, adhere to the following strict standards:
+
+### Commit Process
+1. **Individual File Commits**: Commit each file individually to maintain atomic, focused changes
+2. **Comprehensive Review**: For each file in `git status`, evaluate whether to:
+   - Stage and commit the file
+   - Add to `.gitignore` if it's a generated artifact
+   - Remove if it's temporary/unnecessary
+
+### Staging Guidelines
+- Use precise path targeting: `git add <specific-file-path>` instead of broad patterns
+- Review staged changes with `git diff --staged` before committing
+- For new files, verify they belong in the repository and aren't build artifacts
+
+### Commit Message Format
+Each commit message must follow this structure:
+```
+<type>(<scope>): <technical description>
+
+<optional detailed explanation>
+```
+
+Where:
+- **type**: feat, fix, docs, style, refactor, test, chore
+- **scope**: Component affected (e.g., cli, config, rag)
+- **description**: Technical, precise explanation of the change (not the work done)
+
+Example commit messages:
+```
+feat(rag): implement vector similarity search with FAISS backend
+
+fix(config): resolve path normalization issue in Windows environments
+
+test(pipeline): add comprehensive unit tests for document chunking
+```
+
+### Commit Message Requirements
+- Focus exclusively on technical implementation details
+- Describe what was changed and why, not how it was changed
+- Use imperative, present tense verbs (e.g., "add" not "added")
+- Maximum 72 characters for the first line
+- No references to authorship or AI assistance
+- No marketing language or non-technical descriptions
+- Include relevant technical context (performance impacts, algorithm choices)
+
+### Prohibited Content
+- No signatures, attribution, or references to Claude/AI assistance
+- No "I" statements or personal language
+- No placeholder text or generic descriptions 
+- No emojis or decorative elements
+
 ## Deployment Workflow
 1. Make changes to documentation or code
 2. Test locally with `poetry run mkdocs build --clean --strict`

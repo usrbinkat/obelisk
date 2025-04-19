@@ -1,6 +1,6 @@
 # Implementation Guide
 
-This guide provides a roadmap for implementing the RAG pipeline in Obelisk, covering integration with the existing codebase and deployment considerations.
+This guide provides details on the RAG implementation in Obelisk, covering both the current implementation and future development considerations.
 
 ## Architecture Integration
 
@@ -20,44 +20,95 @@ graph TD
 
 ## Core Components
 
+> Note: The following sections include both currently implemented features and future planned enhancements. The code examples marked "Current implementation" reflect the actual implemented code, while examples marked "Future implementation" represent planned features.
+
 ### 1. Document Processor
 
-Responsible for parsing Markdown files and creating embeddings:
+Responsible for parsing Markdown files, chunking content, and handling metadata:
 
 ```python
-# Future implementation example
+# Current implementation
 class DocumentProcessor:
     def __init__(self, config):
+        """Initialize the document processor."""
         self.config = config
-        self.embedding_model = self._load_embedding_model()
+        # RecursiveCharacterTextSplitter is used for intelligent document chunking
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            # These values come from configuration
+            chunk_size=config.get("chunk_size"),
+            chunk_overlap=config.get("chunk_overlap"),
+            # Separators define how text is split, prioritizing Markdown headers
+            # to ensure chunks maintain semantic relevance
+            separators=["\n## ", "\n### ", "\n#### ", "\n", " ", ""]
+        )
         
-    def process_vault(self, vault_path):
-        """Process all documents in the vault."""
-        documents = self._collect_documents(vault_path)
-        chunks = self._chunk_documents(documents)
-        embeddings = self._create_embeddings(chunks)
-        self._store_in_vectordb(chunks, embeddings)
+        # References to other services (set via register_services)
+        self.embedding_service = None
+        self.storage_service = None
+    
+    def process_file(self, file_path):
+        """Process a single markdown file."""
+        # Read file and create document with source metadata
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
         
-    def _load_embedding_model(self):
-        """Load the configured embedding model."""
-        # Implementation details
+        doc = Document(
+            page_content=content,
+            metadata={"source": file_path}
+        )
         
-    def _collect_documents(self, path):
-        """Collect all markdown documents."""
-        # Implementation details
+        # Extract YAML frontmatter as metadata
+        self._extract_metadata(doc)
         
-    def _chunk_documents(self, documents):
-        """Split documents into appropriate chunks."""
-        # Implementation details
+        # Split document into chunks
+        chunks = self.text_splitter.split_documents([doc])
         
-    def _create_embeddings(self, chunks):
-        """Generate embeddings for all chunks."""
-        # Implementation details
+        # Process with embedding and storage services if available
+        if self.embedding_service and self.storage_service:
+            embedded_docs = self.embedding_service.embed_documents(chunks)
+            self.storage_service.add_documents(embedded_docs)
         
-    def _store_in_vectordb(self, chunks, embeddings):
-        """Store chunks and embeddings in vector database."""
-        # Implementation details
+        return chunks
+    
+    def process_directory(self, directory=None):
+        """Process all markdown files in a directory recursively."""
+        directory = directory or self.config.get("vault_dir")
+        all_chunks = []
+        
+        # Use glob to find all markdown files
+        for md_file in glob.glob(f"{directory}/**/*.md", recursive=True):
+            chunks = self.process_file(md_file)
+            all_chunks.extend(chunks)
+        
+        return all_chunks
 ```
+
+#### Document Chunking Details
+
+The document chunking process uses LangChain's `RecursiveCharacterTextSplitter`, which:
+
+1. Starts with the most granular separator (`\n## ` - Markdown h2 headers)
+2. If chunks are still too large, proceeds to the next separator (h3, h4, etc.)
+3. Ultimately splits on individual characters if necessary
+4. Maintains overlap between chunks to preserve context across chunk boundaries
+
+This approach ensures chunks align with semantic boundaries when possible, improving retrieval quality by keeping related content together.
+
+#### Configuration Options
+
+Document chunking can be configured with:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `chunk_size` | Target size of each chunk in characters | 1000 |
+| `chunk_overlap` | Number of characters to overlap between chunks | 200 |
+
+These parameters balance:
+- **Larger chunks**: More context but less precise retrieval
+- **Smaller chunks**: More precise retrieval but less context
+- **Chunk overlap**: Ensures information spanning chunk boundaries isn't lost
+
+The document processor also includes real-time file watching capabilities using the `watchdog` library to detect changes to markdown files and automatically update the vector database.
 
 ### 2. Vector Database Manager
 
@@ -164,30 +215,141 @@ class PromptManager:
 
 ## Integration with Ollama
 
-The RAG pipeline will integrate with Ollama:
+The RAG pipeline integrates with Ollama for both embedding generation and LLM response generation:
 
 ```python
-# Future implementation example
-class OllamaIntegration:
+# Current implementation (simplified)
+from langchain_ollama import ChatOllama
+from langchain_ollama import OllamaEmbeddings
+
+class EmbeddingService:
     def __init__(self, config):
-        self.api_base = config.get("ollama_api_url", "http://localhost:11434")
-        self.model = config.get("ollama_model", "mistral")
-        
-    async def generate_response(self, prompt, params=None):
-        """Generate a response from Ollama."""
-        default_params = {
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "max_tokens": 1024
-        }
-        params = {**default_params, **(params or {})}
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.api_base}/api/generate",
-                json={"model": self.model, "prompt": prompt, **params}
-            ) as response:
-                return await response.json()
+        """Initialize the embedding service."""
+        self.config = config
+        self.embedding_model = OllamaEmbeddings(
+            model=config.get("embedding_model"),
+            base_url=config.get("ollama_url")
+        )
+    
+    def embed_documents(self, documents):
+        """Generate embeddings for a list of documents."""
+        try:
+            # Current implementation processes each document individually
+            # Future enhancement: Add batch processing for better performance
+            # with documents processed in configurable batch sizes
+            for doc in documents:
+                doc.embedding = self.embedding_model.embed_query(doc.page_content)
+            return documents
+        except Exception as e:
+            logger.error(f"Error embedding documents: {e}")
+            return []
+
+class RAGService:
+    def __init__(self, config):
+        """Initialize with all necessary components."""
+        self.config = config
+        self.llm = ChatOllama(
+            model=config.get("ollama_model"),
+            base_url=config.get("ollama_url"),
+            temperature=0.7,
+        )
+    
+    def query(self, query_text):
+        """Process a query using RAG."""
+        try:
+            # Get relevant documents
+            relevant_docs = self.storage_service.query(query_text)
+            
+            # Format prompt with context
+            context = "\n\n".join([doc.page_content for doc in relevant_docs])
+            prompt = f"""Use the following information to answer the question.
+            
+Information:
+{context}
+
+Question: {query_text}
+
+Answer:"""
+            
+            # Get response from Ollama
+            response = self.llm.invoke(prompt)
+            
+            return {
+                "query": query_text,
+                "response": response.content,
+                "context": relevant_docs,
+                "no_context": len(relevant_docs) == 0
+            }
+        except Exception as e:
+            logger.error(f"Error processing query: {e}")
+            # Fallback to direct LLM query
+            response = self.llm.invoke(f"Question: {query_text}\n\nAnswer:")
+            return {
+                "query": query_text,
+                "response": response.content,
+                "context": [],
+                "no_context": True
+            }
+```
+
+## Error Handling Architecture
+
+The RAG system implements a comprehensive error handling strategy to ensure reliability:
+
+### 1. Layered Error Handling
+
+Each component implements its own error handling appropriate to its context:
+
+- **Document Processor**: Handles I/O errors, parsing errors, and invalid documents
+- **Embedding Service**: Manages embedding generation failures
+- **Vector Storage**: Handles database errors and metadata type compatibility
+- **API Layer**: Converts exceptions to proper HTTP responses
+
+### 2. Error Recovery Strategies
+
+The system uses various strategies to recover from errors:
+
+- **Graceful Degradation**: If document retrieval fails, the system falls back to direct LLM queries
+- **Default Values**: Configuration system provides sensible defaults for all settings
+- **Filtering**: Invalid documents or metadata are filtered rather than causing failures
+- **Persistence**: Database operations include safeguards against corruption
+
+### 3. Logging System
+
+A centralized logging system provides visibility into errors:
+
+```python
+# Logging configuration (from cli.py)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+# Specific logging for external libraries
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("chromadb").setLevel(logging.WARNING)
+```
+
+### 4. Debug Mode
+
+A debug mode can be enabled for detailed error information:
+
+```python
+# Debug mode handling (from cli.py)
+try:
+    # Operation code
+except Exception as e:
+    logger.error(f"Error: {e}")
+    if os.environ.get("RAG_DEBUG"):
+        # In debug mode, show the full traceback
+        import traceback
+        traceback.print_exc()
+    else:
+        # In normal mode, show a user-friendly message
+        print(f"Error: {e}")
+        print("For detailed error output, set the RAG_DEBUG environment variable")
 ```
 
 ## Web UI Integration
@@ -236,7 +398,7 @@ plugins:
       hybrid_search: true
       
       # Integration
-      ollama_api_url: "http://ollama:11434"
+      ollama_url: "http://ollama:11434"
       ollama_model: "mistral"
       
       # Templates

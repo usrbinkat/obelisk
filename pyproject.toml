@@ -50,4 +50,5 @@ select = ["E", "F", "I", "W"]
 ignore = []
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
+playwright = "^1.51.0"
 

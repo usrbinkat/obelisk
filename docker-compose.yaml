@@ -1,13 +1,19 @@
-# https://gist.githubusercontent.com/usrbinkat/de44facc683f954bf0cca6c87e2f9f88/raw/0402e8441de57ccd8b00fe0db8ad40cae7d5fdb8/docker-compose.yaml
 services:
   open-webui:
     container_name: open-webui
     image: ghcr.io/open-webui/open-webui:main
     environment:
       - MODEL_DOWNLOAD_DIR=/models
-      - OLLAMA_API_BASE_URL=http://ollama:11434
-      - OLLAMA_API_URL=http://ollama:11434
+      # Point OpenWebUI to use Obelisk RAG as its primary API
+      - OLLAMA_API_BASE_URL=http://obelisk-rag:8000
+      - OLLAMA_API_URL=http://obelisk-rag:8000
+      - OLLAMA_BASE_URL=http://obelisk-rag:8000
       - LOG_LEVEL=debug
+      # We need to use built-in RAG features but point to our service
+      - RAG_ENABLED=false
+      # Additional settings to ensure OpenWebUI uses our API
+      - OPENAI_API_BASE_URL=http://obelisk-rag:8000/v1
+      - OPENAI_API_KEY=dummy-key
     volumes:
       - data:/data
       - models:/models
@@ -21,6 +27,7 @@ services:
         max-file: "2"
     depends_on:
       - ollama
+      - obelisk-rag
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -57,27 +64,63 @@ services:
       - ollama-net
     restart: unless-stopped
 
+  # For devcontainer use, we build the obelisk container with the files copied in
+  # rather than mounted, to avoid WSL/devcontainer mounting issues
   obelisk:
     container_name: obelisk
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - ./vault:/app/vault
-      - ./mkdocs.yml:/app/mkdocs.yml
-      - ./pyproject.toml:/app/pyproject.toml
-      - ./poetry.lock:/app/poetry.lock
+    # No volume mounts for mkdocs.yml to avoid mount errors in devcontainer
     ports:
       - "8000:8000"
     networks:
       - ollama-net
     restart: unless-stopped
+    command: ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+
+  obelisk-rag:
+    container_name: obelisk-rag
+    build:
+      context: .
+      dockerfile: Dockerfile.rag
+    volumes:
+      - rag-data:/app/data
+      - rag-vault:/app/vault
+    ports:
+      - "8001:8000"
+    environment:
+      - VAULT_DIR=/app/vault
+      - CHROMA_DIR=/app/data/chroma_db
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3
+      - EMBEDDING_MODEL=mxbai-embed-large
+      - RETRIEVE_TOP_K=5
+      - CHUNK_SIZE=2500
+      - CHUNK_OVERLAP=500
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - WATCH_DOCS=true
+    depends_on:
+      - ollama
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 volumes:
   data:
   models:
   ollama:
   open-webui:
+  rag-data:
+  rag-vault:
 
 networks:
   ollama-net:

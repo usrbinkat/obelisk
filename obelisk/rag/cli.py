@@ -2,7 +2,9 @@
 Command line interface for the Obelisk RAG system.
 
 This module provides a CLI interface to the RAG system, allowing users
-to index documents, query the system, and manage the service.
+to index documents, query the system, and manage the service. The API 
+implements an OpenAI-compatible interface (/v1/chat/completions) for
+integration with tools and interfaces expecting the OpenAI API format.
 """
 
 import os
@@ -58,6 +60,17 @@ def parse_args():
         action="store_true",
         help="Output results as JSON"
     )
+    query_parser.add_argument(
+        "--model",
+        default="llama3",
+        help="Model to use for the query (default: llama3)"
+    )
+    query_parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.7,
+        help="Temperature setting for the model (default: 0.7)"
+    )
     
     # Stats command
     stats_parser = subparsers.add_parser("stats", help="Show system statistics")
@@ -81,7 +94,7 @@ def parse_args():
     )
     
     # Server command
-    server_parser = subparsers.add_parser("serve", help="Start the RAG API server")
+    server_parser = subparsers.add_parser("serve", help="Start the RAG API server with OpenAI-compatible endpoint")
     server_parser.add_argument(
         "--host", 
         help="Host to bind server to"
@@ -131,24 +144,53 @@ def handle_index(args):
 def handle_query(args):
     """Handle the query command."""
     service = RAGService(get_config())
+    
+    # Set model config if provided
+    if hasattr(args, 'model') and args.model:
+        service.llm.model = args.model
+    
+    # Set temperature if provided
+    if hasattr(args, 'temperature'):
+        service.llm.temperature = args.temperature
+    
+    # Get query result
     result = service.query(args.query_text)
     
+    # Format sources in a consistent way similar to the API
+    sources = []
+    if result["context"] and not result["no_context"]:
+        sources = [
+            {
+                "content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
+                "source": doc.metadata.get("source", "Unknown")
+            }
+            for doc in result["context"]
+        ]
+    
     if args.json:
-        # For JSON output, convert documents to serializable format
+        # For JSON output, format in OpenAI-compatible style with sources
+        import time
         serializable_result = {
-            "query": result["query"],
-            "response": result["response"],
-            "no_context": result["no_context"],
-            "context": [
+            "id": f"rag-chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": args.model if hasattr(args, 'model') and args.model else service.config.get("ollama_model", "llama3"),
+            "choices": [
                 {
-                    "content": doc.page_content,
-                    "metadata": {
-                        k: v for k, v in doc.metadata.items() 
-                        if not isinstance(v, (list, dict))
-                    }
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": result["response"]
+                    },
+                    "finish_reason": "stop"
                 }
-                for doc in result["context"]
-            ]
+            ],
+            "usage": {
+                "prompt_tokens": len(args.query_text.split()),  # Rough estimate
+                "completion_tokens": len(result["response"].split()),  # Rough estimate
+                "total_tokens": len(args.query_text.split()) + len(result["response"].split())  # Rough estimate
+            },
+            "sources": sources if sources else None
         }
         print(json.dumps(serializable_result, indent=2))
     else:
@@ -158,11 +200,10 @@ def handle_query(args):
         print("\nRESPONSE:")
         print(result["response"])
         
-        if result["context"]:
+        if sources:
             print("\nSOURCES:")
-            for i, doc in enumerate(result["context"]):
-                source = doc.metadata.get("source", "Unknown")
-                print(f"{i+1}. {source}")
+            for i, source_info in enumerate(sources):
+                print(f"{i+1}. {source_info['source']}")
 
 
 def handle_stats(args):
@@ -233,24 +274,10 @@ def handle_serve(args):
         service.start_document_watcher()
         print("Document watcher started")
     
-    # Define API models
-    class QueryRequest(BaseModel):
-        query: str
-    
-    class SourceInfo(BaseModel):
-        content: str
-        source: str
-    
-    class QueryResponse(BaseModel):
-        query: str
-        response: str
-        sources: list[SourceInfo]
-        no_context: bool = False
-    
     # Create FastAPI app
     app = FastAPI(
         title="Obelisk RAG API",
-        description="Retrieval Augmented Generation API for Obelisk documentation",
+        description="Retrieval Augmented Generation API with OpenAI-compatible endpoints",
         version="0.1.0"
     )
     
@@ -259,28 +286,211 @@ def handle_serve(args):
         """Get system statistics."""
         return service.get_stats()
     
-    @app.post("/query", response_model=QueryResponse)
-    def api_query(request: QueryRequest):
-        """Process a query using RAG."""
-        try:
-            result = service.query(request.query)
+    # Add OpenAI-compatible API endpoints and Ollama proxying
+    try:
+        # Add imports for Ollama proxy
+        import httpx
+        from fastapi import Request
+        from fastapi.responses import JSONResponse, StreamingResponse
+        
+        # Setup OpenAI-compatible endpoints
+        from obelisk.rag.api import setup_openai_api
+        setup_openai_api(app)
+        print("OpenAI-compatible API endpoints configured at /v1/chat/completions")
+        
+        # Add Ollama proxy routes to handle requests expecting Ollama API format
+        @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
+        async def proxy_ollama_api(request: Request, path: str):
+            """Proxy requests to Ollama API."""
+            ollama_url = service.config.get("ollama_url")
+            target_url = f"{ollama_url}/api/{path}"
             
-            # Format response
-            return {
-                "query": result["query"],
-                "response": result["response"],
-                "sources": [
-                    {
-                        "content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
-                        "source": doc.metadata.get("source", "Unknown")
-                    }
-                    for doc in result["context"]
-                ],
-                "no_context": result["no_context"]
-            }
-        except Exception as e:
-            logger.error(f"Error processing query: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            logger.info(f"Proxying request to Ollama API: {target_url}")
+            
+            # Get the request body
+            body = await request.body()
+            
+            # Special handling for chat and generate endpoints - enhance with RAG
+            if path in ["chat", "generate"] and request.method == "POST" and body:
+                try:
+                    # Parse the request body
+                    data = json.loads(body)
+                    
+                    # Extract the prompt/messages
+                    if path == "chat" and "messages" in data:
+                        # Extract the last user message from chat history
+                        logger.info(f"Chat messages received: {json.dumps(data.get('messages', []))}")
+                        user_messages = [m for m in data.get("messages", []) if m.get("role") == "user"]
+                        if user_messages:
+                            query = user_messages[-1].get("content", "")
+                            
+                            # Process through our RAG pipeline
+                            logger.info(f"Enhancing chat with RAG for query: {query}")
+                            logger.info(f"Starting RAG query process...")
+                            rag_result = service.query(query)
+                            logger.info(f"RAG query completed with {len(rag_result.get('context', []))} context items")
+                            
+                            # If we found context, modify the prompt to include it
+                            if rag_result["context"] and not rag_result["no_context"]:
+                                logger.info(f"Found {len(rag_result['context'])} relevant context items")
+                                context_text = "\n\n".join([
+                                    f"Document {i+1}:\n{doc.page_content}" 
+                                    for i, doc in enumerate(rag_result["context"])
+                                ])
+                                
+                                logger.info(f"Context length: {len(context_text)} characters")
+                                                                
+                                # Insert a system message with context
+                                system_msg = {
+                                    "role": "system", 
+                                    "content": f"Use the following information to answer the user's question. If the information doesn't contain the answer, say you don't know.\n\nContext from documentation:\n{context_text}"
+                                }
+                                
+                                # Add system message at the beginning if not already there
+                                if not any(m.get("role") == "system" for m in data.get("messages", [])):
+                                    logger.info("Adding new system message with context")
+                                    data["messages"].insert(0, system_msg)
+                                else:
+                                    # Update existing system message
+                                    logger.info("Updating existing system message with context")
+                                    for i, msg in enumerate(data["messages"]):
+                                        if msg.get("role") == "system":
+                                            data["messages"][i] = system_msg
+                                            break
+                                
+                                # Update the body with the enhanced messages
+                                logger.info("Updating request body with enhanced messages")
+                                body = json.dumps(data).encode()
+                                logger.info(f"New body size: {len(body)} bytes")
+                            else:
+                                logger.info("No relevant context found, using original request")
+                    
+                    elif path == "generate" and "prompt" in data:
+                        # Extract the prompt
+                        query = data.get("prompt", "")
+                        logger.info(f"Generate prompt received: {query[:100]}...")
+                        
+                        # Process through our RAG pipeline
+                        logger.info(f"Enhancing generate with RAG for query: {query}")
+                        logger.info(f"Starting RAG query process for generate...")
+                        rag_result = service.query(query)
+                        logger.info(f"RAG query completed with {len(rag_result.get('context', []))} context items")
+                        
+                        # If we found context, modify the prompt to include it
+                        if rag_result["context"] and not rag_result["no_context"]:
+                            logger.info(f"Found {len(rag_result['context'])} relevant context items for generate")
+                            context_text = "\n\n".join([
+                                f"Document {i+1}:\n{doc.page_content}" 
+                                for i, doc in enumerate(rag_result["context"])
+                            ])
+                            
+                            logger.info(f"Context length for generate: {len(context_text)} characters")
+                            
+                            # Create a new prompt with context
+                            new_prompt = f"""Use the following information to answer the question. If the information doesn't contain the answer, say you don't know.
+
+Context from documentation:
+{context_text}
+
+Question: {query}
+
+Answer:"""
+                            
+                            # Update the prompt in the data
+                            logger.info("Updating prompt with context")
+                            data["prompt"] = new_prompt
+                            
+                            # Update the body with the enhanced prompt
+                            logger.info("Updating request body with enhanced prompt")
+                            body = json.dumps(data).encode()
+                            logger.info(f"New body size for generate: {len(body)} bytes")
+                        else:
+                            logger.info("No relevant context found for generate, using original request")
+                
+                except Exception as e:
+                    logger.error(f"Error enhancing with RAG: {e}")
+                    # Continue with the original request if there's an error
+            
+            # Forward the request to Ollama
+            # Create a new headers dictionary, removing 'host' and updating 'content-length'
+            headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+            headers["content-length"] = str(len(body))
+            
+            # Detailed logging
+            logger.info(f"Request method: {request.method}")
+            logger.info(f"Request headers: {headers}")
+            logger.info(f"Request body length: {len(body)}")
+            logger.info(f"Forwarding to target URL: {target_url}")
+            
+            try:
+                # Use a longer timeout (120 seconds) for requests to Ollama
+                logger.info("Starting request to Ollama...")
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    logger.info("Client created, sending request...")
+                    response = await client.request(
+                        method=request.method,
+                        url=target_url,
+                        headers=headers,
+                        content=body,
+                    )
+                    logger.info(f"Received response from Ollama with status: {response.status_code}")
+                    
+                    content_type = response.headers.get("content-type", "")
+                    logger.info(f"Response content type: {content_type}")
+                    logger.info(f"Response headers: {dict(response.headers)}")
+            except Exception as e:
+                logger.error(f"Error during request to Ollama: {str(e)}")
+                raise
+            
+            # Return the response from Ollama
+            try:
+                return JSONResponse(
+                    content=response.json() if response.content else None,
+                    status_code=response.status_code,
+                    headers=dict(response.headers)
+                )
+            except:
+                # If not JSON, return raw content
+                return StreamingResponse(
+                    content=iter([response.content]),
+                    status_code=response.status_code,
+                    headers=dict(response.headers)
+                )
+        
+        # Add route for /ollama/api/* which OpenWebUI uses
+        @app.api_route("/ollama/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"])
+        async def proxy_ollama_api_alt(request: Request, path: str):
+            """Proxy requests to Ollama API (alternate path)."""
+            ollama_url = service.config.get("ollama_url")
+            target_url = f"{ollama_url}/api/{path}"
+            
+            logger.info(f"Proxying request to Ollama API (alt path): {target_url}")
+            
+            # Get the request body and forward to the standard proxy
+            body = await request.body()
+            
+            # Forward the request to our main proxy endpoint
+            # We reuse the code by calling our other route handler
+            # This ensures consistent RAG enhancement for both routes
+            forwarded_request = Request(
+                scope=request.scope.copy(),
+                receive=request._receive,
+                send=request._send,
+            )
+            
+            # Call our standard proxy with the appropriate path
+            return await proxy_ollama_api(forwarded_request, path)
+        
+        print("Ollama API proxy configured at /api/* and /ollama/api/*")
+        
+        # Add manual route listing for debugging
+        print("All registered routes:")
+        for route in app.routes:
+            print(f"  {', '.join(route.methods) if hasattr(route, 'methods') else 'N/A'} {route.path}")
+    except Exception as e:
+        logger.error(f"Error setting up API endpoints: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
     
     # Start the server
     host = service.config.get("api_host")
@@ -289,7 +499,7 @@ def handle_serve(args):
     print(f"Starting API server at http://{host}:{port}")
     print("API endpoints:")
     print(f"  GET  http://{host}:{port}/stats")
-    print(f"  POST http://{host}:{port}/query")
+    print(f"  POST http://{host}:{port}/v1/chat/completions")
     print("\nPress Ctrl+C to stop")
     
     uvicorn.run(app, host=host, port=port)

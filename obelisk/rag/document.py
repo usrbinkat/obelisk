@@ -36,7 +36,7 @@ class DocumentProcessor:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.config.get("chunk_size"),
             chunk_overlap=self.config.get("chunk_overlap"),
-            separators=["\n## ", "\n### ", "\n#### ", "\n", " ", ""]
+            separators=["\n## ", "\n### ", "\n#### ", "\n- ", "\n* ", "\n1. ", "\n```", "\n", " ", ""]
         )
         
         # These will be set when registered

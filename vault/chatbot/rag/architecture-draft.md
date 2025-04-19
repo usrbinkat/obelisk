@@ -1,12 +1,17 @@
 # RAG System Design Document: Markdown-Based Knowledge Retrieval
+
+> **Note on Implementation Status:** This document represents the architectural vision for the RAG system. The current implementation uses **ChromaDB** for vector storage rather than Milvus, which is planned for future versions. Features marked with "🔄" are planned for future implementation.
+
 ## Executive Summary
-This document outlines a comprehensive design for a retrieval-augmented generation (RAG) system that processes markdown documents from a monitored directory, creates vector embeddings, stores them in a Milvus database, and leverages LangChain to create a pipeline that connects with Ollama-hosted LLMs for intelligent querying and response generation.
+
+This document outlines a comprehensive design for a retrieval-augmented generation (RAG) system that processes markdown documents from a monitored directory, creates vector embeddings, stores them in a vector database, and leverages LangChain to create a pipeline that connects with Ollama-hosted LLMs for intelligent querying and response generation.
+
 The design emphasizes:
-- Real-time document processing with change detection
-- State-of-the-art embedding models for optimal semantic understanding
-- Horizontally scalable vector storage with Milvus
-- Modular pipeline architecture for extensibility
-- Comprehensive evaluation metrics for continuous improvement
+- ✅ Real-time document processing with change detection
+- ✅ State-of-the-art embedding models for optimal semantic understanding
+- 🔄 Horizontally scalable vector storage with Milvus (future enhancement, currently using ChromaDB)
+- ✅ Modular pipeline architecture for extensibility
+- 🔄 Comprehensive evaluation metrics for continuous improvement
 
 ## 1. System Architecture Overview
 
@@ -15,7 +20,7 @@ The design emphasizes:
 │              │    │              │    │              │    │              │
 │   Document   │    │  Embedding   │    │    Vector    │    │   Response   │
 │  Processing  │───▶│  Generation  │───▶│    Store     │───▶│  Generation  │
-│              │    │              │    │              │    │              │
+│              │    │              │    │  (ChromaDB)  │    │              │
 └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
        │                                       ▲                    │
        │                                       │                    │
@@ -23,8 +28,8 @@ The design emphasizes:
        │                 ┌──────────────┐      │                    │
        │                 │              │      │                    │
        └────────────────▶│   Metadata   │──────┘                    │
-                         │    Store     │                           │
-                         │              │                           │
+                         │   (Stored    │                           │
+                         │  in ChromaDB)│                           │
                          └──────────────┘                           │
                                                                     │
                          ┌──────────────┐                           │
@@ -34,6 +39,8 @@ The design emphasizes:
                          │              │
                          └──────────────┘
 ```
+
+> **Implementation Note:** The current implementation uses ChromaDB for both vector storage and metadata storage. The separate metadata store component shown in this diagram represents a future enhancement.
 ## 2. Component Design
 ### 2.1 Document Processing Pipeline
 #### Directory Watcher Service
@@ -159,7 +166,11 @@ class EmbeddingService:
         return self.embeddings_model.embed_query(query)
 ```
 The Embedding Service leverages Ollama to generate high-quality embeddings using the mxbai-embed-large model. It includes batch processing to handle large document sets efficiently.
-### 2.3 Vector Storage with Milvus
+### 2.3 Vector Storage
+
+#### 🔄 Planned Future Implementation with Milvus
+
+> **Implementation Note:** The current implementation uses ChromaDB instead of Milvus. The code below represents the planned future implementation with Milvus for enhanced scalability.
 ```python
 from pymilvus import connections, utility, Collection, FieldSchema, CollectionSchema, DataType
 import numpy as np
@@ -613,26 +624,46 @@ The mxbai-embed-large model provides excellent performance for semantic understa
 2. Batch Processing: Process embeddings in batches to optimize throughput.
 3. Caching: Implement caching for frequently accessed embeddings.
 4. Quantization: For larger collections, consider quantizing embeddings to reduce storage and memory footprint.
-### 4.3 Milvus Configuration and Optimization
-For optimal Milvus performance:
-1. Index Selection: HNSW (Hierarchical Navigable Small World) provides the best balance of accuracy and performance.
-2. Parameter Tuning:
+### 4.3 Vector Database Configuration and Optimization
+
+#### ✅ Current ChromaDB Configuration
+
+The current implementation uses ChromaDB with the following configuration:
+
+1. **Persistence**: Local directory storage at the configured location
+2. **Embedding Integration**: Direct integration with Ollama embedding models 
+3. **Default Settings**: Using ChromaDB's default HNSW parameters
+4. **Metadata Handling**: Filtering of complex data types for compatibility
+
+#### 🔄 Future Milvus Configuration (Planned)
+
+For optimal Milvus performance (future implementation):
+
+1. **Index Selection**: HNSW (Hierarchical Navigable Small World) provides the best balance of accuracy and performance
+2. **Parameter Tuning**:
    - M: Controls the maximum number of connections per node (8-16 recommended)
    - efConstruction: Controls index build quality (100-200 recommended)
    - ef: Controls search accuracy (50-150 recommended)
-3. Resource Allocation: Configure adequate memory for Milvus, especially for the index.
-4. Collection Design: Use partitioning for larger collections to improve query performance.
+3. **Resource Allocation**: Configure adequate memory for Milvus, especially for the index
+4. **Collection Design**: Use partitioning for larger collections to improve query performance
 ### 4.4 Advanced RAG Techniques
-To enhance RAG performance:
-1. Query Reformulation: Process user queries to improve retrieval effectiveness:
+
+> **Implementation Note:** The following techniques are planned for future enhancements and are not part of the current implementation.
+
+#### 🔄 Future RAG Enhancements (Planned)
+
+1. **Query Reformulation**: Process user queries to improve retrieval effectiveness:
    ```python
+   # PLANNED ENHANCEMENT
    def preprocess_query(query):
        # Expand acronyms, handle synonyms, etc.
        # ...
        return processed_query
    ```
-2. Hybrid Search: Combine vector similarity with keyword search for improved recall:
+
+2. **Hybrid Search**: Combine vector similarity with keyword search for improved recall:
    ```python
+   # PLANNED ENHANCEMENT
    def hybrid_search(query, vectorstore, metadata_store):
        # Vector search
        vector_results = vectorstore.search(query_embedding)
@@ -642,8 +673,10 @@ To enhance RAG performance:
        combined_results = combine_search_results(vector_results, keyword_results)
        return combined_results
    ```
-3. Reranking: Implement a two-stage retrieval process to refine results:
+
+3. **Reranking**: Implement a two-stage retrieval process to refine results:
    ```python
+   # PLANNED ENHANCEMENT
    def rerank_results(query, initial_results, reranker_model):
        query_doc_pairs = [(query, result["text"]) for result in initial_results]
        scores = reranker_model.compute_scores(query_doc_pairs)
@@ -655,8 +688,10 @@ To enhance RAG performance:
        reranked_results.sort(key=lambda x: x[1], reverse=True)
        return [item[0] for item in reranked_results]
    ```
-4. LLM Agents for Query Planning:
+
+4. **LLM Agents for Query Planning**:
    ```python
+   # PLANNED ENHANCEMENT
    def agent_based_query(query, rag_pipeline):
        # Analyze query to determine approach
        query_plan = rag_pipeline.llm.invoke(f"""
@@ -677,34 +712,74 @@ To enhance RAG performance:
            return rag_pipeline.query(query)
    ```
 ### 4.5 Evaluation and Monitoring
-Implement comprehensive evaluation metrics:
-1. Retrieval Evaluation:
+
+> **Implementation Note:** The following evaluation metrics are planned for future implementation to measure and improve RAG performance.
+
+#### 🔄 Planned Evaluation Framework
+
+1. **Retrieval Evaluation**:
    - Mean Reciprocal Rank (MRR)
    - Normalized Discounted Cumulative Gain (NDCG)
    - Precision@K and Recall@K
-2. Response Quality Evaluation:
+
+2. **Response Quality Evaluation**:
    - Factual Accuracy
    - Answer Relevance
    - Citation Accuracy
-3. System Monitoring:
+
+#### ✅ Current Evaluation Methods
+
+The current implementation provides basic statistics and manual evaluation:
+
+- Document count tracking
+- Source file listing
+- Manual verification of responses
+
+#### 🔄 Planned System Monitoring
+
+3. **System Monitoring**:
    - Query latency
    - Embedding generation throughput
    - Vector store query performance
    - LLM response time
 ## 5. Extension Points
+
+> **Implementation Note:** The following are potential extension points for future development beyond the current implementation.
+
+#### 🔄 Planned Future Extensions
+
 The modular design allows for several extensions:
-1. Multi-Modal Support: Extend to handle images and other media in markdown.
-2. Semantic Caching: Implement a semantic cache for similar queries.
-3. Custom Embedding Models: Allow customization of embedding models based on domain.
-4. User Feedback Integration: Capture user feedback to improve retrieval and generation.
-5. Self-Critique and Refinement: Implement self-evaluation and refinement of responses.
+
+1. **Multi-Modal Support**: Extend to handle images and other media in markdown
+2. **Semantic Caching**: Implement a semantic cache for similar queries
+3. **Custom Embedding Models**: Allow customization of embedding models based on domain
+4. **Advanced Vector Database Integration**: Support for Milvus and other scalable vector databases
+5. **Hybrid Search Implementation**: Combine vector search with keyword-based search
+6. **User Feedback Integration**: Capture user feedback to improve retrieval and generation
+7. **Self-Critique and Refinement**: Implement self-evaluation and refinement of responses
+
 ## 6. Testing Strategy
+
+> **Implementation Note:** The current implementation includes basic unit tests. The comprehensive testing framework described below is planned for future development.
+
+#### 🔄 Planned Testing Framework
+
 Comprehensive testing includes:
-1. Unit Tests: For individual components.
-2. Integration Tests: For component interactions.
-3. End-to-End Tests: Using a test corpus of markdown documents.
-4. Performance Testing: Under various loads and document sizes.
-5. Regression Testing: To ensure continued quality as the system evolves.
+
+1. **Unit Tests**: For individual components
+2. **Integration Tests**: For component interactions
+3. **End-to-End Tests**: Using a test corpus of markdown documents
+4. **Performance Testing**: Under various loads and document sizes
+5. **Regression Testing**: To ensure continued quality as the system evolves
+
+#### ✅ Current Testing Implementation
+
+The current implementation includes:
+
+1. **Basic Unit Tests**: Testing core functionality of each component
+2. **Service-level Tests**: Verifying RAG service integration
+3. **Document Processing Tests**: Ensuring correct handling of markdown files
+
 ## 7. Appendix
 ### 7.1 Installation Instructions
 ```bash

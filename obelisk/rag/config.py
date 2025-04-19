@@ -23,9 +23,9 @@ class RAGConfig:
         "embedding_model": "mxbai-embed-large",
         
         # Processing settings
-        "chunk_size": 1000,
-        "chunk_overlap": 200,
-        "retrieve_top_k": 3,
+        "chunk_size": 2500,
+        "chunk_overlap": 500,
+        "retrieve_top_k": 5,
         
         # API settings
         "api_host": "0.0.0.0",

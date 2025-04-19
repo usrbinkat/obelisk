@@ -138,7 +138,7 @@ You can customize the chat experience by:
 3. Using the RAG system to enhance responses with your documentation
 4. Customizing the RAG system parameters for better retrieval
 
-See the [Open WebUI documentation](https://github.com/open-webui/open-webui), [Ollama documentation](https://github.com/ollama/ollama), and our [RAG documentation](rag/index.md) for more details.
+See the [Open WebUI documentation](https://github.com/open-webui/open-webui), [Ollama documentation](https://github.com/ollama/ollama), and our [RAG documentation](rag/getting-started.md) for more details.
 
 ## RAG System Integration
 
