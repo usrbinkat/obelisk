@@ -20,7 +20,6 @@ The Obelisk RAG system provides document indexing, vector storage, and query cap
 
 | Feature | Documentation | Status |
 |---------|---------------|--------|
-| Native API | [using-rag.md](./using-rag.md) | ✅ Implemented |
 | OpenAI-compatible API | [using-rag.md](./using-rag.md) | ✅ Implemented |
 | Ollama Integration | [ollama-integration.md](./ollama-integration.md) | ✅ Implemented |
 | OpenWebUI Integration | [openwebui-integration.md](./openwebui-integration.md) | ✅ Implemented |
@@ -47,13 +46,13 @@ Based on the analysis in `task.md`, we've made significant improvements to the d
 ### Completed Tasks
 
 ✅ **High Priority**
-- Added OpenAI-compatible API documentation to `using-rag.md`
+- Consolidated API to use only the OpenAI-compatible endpoint 
 - Created comprehensive `openwebui-integration.md` documentation
 - Updated vector database documentation to reflect ChromaDB implementation
 - Fixed WebUI integration inconsistencies
 
 ✅ **Medium Priority**
-- Updated query endpoint format documentation with proper JSON formats
+- Updated API documentation with OpenAI-compatible format
 - Fixed environment variable inconsistencies (`OLLAMA_URL` vs `OLLAMA_API_URL`)
 - Added detailed document chunking documentation to `implementation.md`
 - Documented error handling strategies and debug mode
@@ -118,8 +117,8 @@ The current RAG implementation includes:
    - LLM response generation via Ollama
 
 5. **API & Integration**
-   - Native REST API endpoints
-   - OpenAI-compatible API for tool integration
+   - OpenAI-compatible API endpoint for tool integration
+   - Source information included in API responses
    - Docker containerization for deployment
 
 ## Configuration Reference

@@ -173,36 +173,7 @@ The API server provides the following endpoints:
    - Returns statistics about the RAG system
    - Example: `curl http://localhost:8000/stats`
 
-2. **POST /query**
-   - Processes a query using the RAG system
-   - Request format:
-     ```json
-     {
-       "query": "What is Obelisk?"  // Required: The query text
-     }
-     ```
-   - Response format:
-     ```json
-     {
-       "query": "What is Obelisk?",
-       "response": "Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites...",
-       "sources": [
-         {
-           "content": "Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites...",
-           "source": "index.md"
-         }
-       ],
-       "no_context": false
-     }
-     ```
-   - Example:
-     ```bash
-     curl -X POST http://localhost:8000/query \
-       -H "Content-Type: application/json" \
-       -d '{"query": "What is Obelisk?"}'
-     ```
-
-3. **POST /v1/chat/completions**
+2. **POST /v1/chat/completions**
    - OpenAI-compatible endpoint for chat completions
    - Enables integration with tools expecting OpenAI API format
    - Example:
@@ -266,9 +237,17 @@ Field descriptions:
     "prompt_tokens": 10,
     "completion_tokens": 20,
     "total_tokens": 30
-  }
+  },
+  "sources": [
+    {
+      "content": "Obelisk is a tool that transforms Obsidian vaults...",
+      "source": "index.md"
+    }
+  ]
 }
 ```
+
+Note that the response includes a `sources` field that contains information about the document sources used for generating the response, when context is found from the RAG system.
 
 Note that the RAG system extracts the query from the last user message in the `messages` array and processes it through the RAG pipeline before generating a response.
 

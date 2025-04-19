@@ -59,14 +59,23 @@ docker-compose restart obelisk-rag
 
 ## Querying Your Documents
 
-You can query your documents using the API:
+You can query your documents using the OpenAI-compatible API:
 
 ```bash
-# Simple query
-curl -X POST http://localhost:8001/query \
+# Using the OpenAI-compatible API
+curl -X POST http://localhost:8001/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"query": "What is Obelisk?"}'
+  -d '{
+    "model": "llama3",
+    "messages": [
+      {"role": "user", "content": "What is Obelisk?"}
+    ]
+  }'
 ```
+
+The response will include:
+- The generated response in an OpenAI-compatible format
+- Source documents used in the "sources" field (if any documents were found)
 
 ## Viewing Statistics
 
@@ -182,7 +191,7 @@ environment:
   # RAG configuration
   - RAG_ENABLED=true
   - RAG_SERVICE_TYPE=custom
-  - RAG_SERVICE_URL=http://obelisk-rag:8000
+  - RAG_SERVICE_URL=http://obelisk-rag:8000/v1
   - RAG_TEMPLATE=You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question. If you don't know the answer, just say that you don't know.
 
     Context:
