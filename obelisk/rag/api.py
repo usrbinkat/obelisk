@@ -38,6 +38,10 @@ class ChatCompletionRequest(BaseModel):
     max_tokens: Optional[int] = Field(None, description="Maximum number of tokens to generate")
     stream: Optional[bool] = Field(False, description="Whether to stream the response")
 
+class SourceInfo(BaseModel):
+    content: str = Field(..., description="The content of the source document")
+    source: str = Field(..., description="The source document identifier")
+
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: Message
@@ -55,6 +59,7 @@ class ChatCompletionResponse(BaseModel):
     model: str
     choices: List[ChatCompletionResponseChoice]
     usage: ChatCompletionResponseUsage
+    sources: Optional[List[SourceInfo]] = Field(None, description="Source documents used in RAG")
 
 @router.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def create_chat_completion(request: ChatCompletionRequest):
@@ -76,6 +81,17 @@ async def create_chat_completion(request: ChatCompletionRequest):
         # Process the query through RAG
         rag_result = service.query(query)
         
+        # Create sources information if available
+        sources = None
+        if rag_result["context"] and not rag_result["no_context"]:
+            sources = [
+                SourceInfo(
+                    content=doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
+                    source=doc.metadata.get("source", "Unknown")
+                )
+                for doc in rag_result["context"]
+            ]
+            
         # Create the response
         import time
         response = ChatCompletionResponse(
@@ -96,7 +112,8 @@ async def create_chat_completion(request: ChatCompletionRequest):
                 prompt_tokens=len(query.split()),  # Rough estimate
                 completion_tokens=len(rag_result["response"].split()),  # Rough estimate
                 total_tokens=len(query.split()) + len(rag_result["response"].split())  # Rough estimate
-            )
+            ),
+            sources=sources
         )
         
         return response
@@ -108,8 +125,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
 def setup_openai_api(app: FastAPI):
     """Add the OpenAI-compatible API endpoints to the FastAPI app."""
     app.include_router(router)
-    # Print a more detailed message
+    
+    # Print a detailed message
     logger.info(f"OpenAI-compatible API endpoints configured: POST /v1/chat/completions")
+    
     # Log all the available routes for debugging
     for route in app.routes:
         logger.info(f"Available route: {route.methods} {route.path}")
