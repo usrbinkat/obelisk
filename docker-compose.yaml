@@ -4,14 +4,16 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     environment:
       - MODEL_DOWNLOAD_DIR=/models
-      - OLLAMA_API_BASE_URL=http://ollama:11434
-      - OLLAMA_API_URL=http://ollama:11434
+      # Point OpenWebUI to use Obelisk RAG as its primary API
+      - OLLAMA_API_BASE_URL=http://obelisk-rag:8000
+      - OLLAMA_API_URL=http://obelisk-rag:8000
+      - OLLAMA_BASE_URL=http://obelisk-rag:8000
       - LOG_LEVEL=debug
-      # RAG configuration
-      - RAG_ENABLED=true
-      - RAG_SERVICE_TYPE=custom
-      - RAG_SERVICE_URL=http://obelisk-rag:8000/v1
-      - "RAG_TEMPLATE=You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question. If you don't know the answer, just say that you don't know.\n\nContext:\n{{context}}\n\nUser question: {{query}}"
+      # We need to use built-in RAG features but point to our service
+      - RAG_ENABLED=false
+      # Additional settings to ensure OpenWebUI uses our API
+      - OPENAI_API_BASE_URL=http://obelisk-rag:8000/v1
+      - OPENAI_API_KEY=dummy-key
     volumes:
       - data:/data
       - models:/models
@@ -93,10 +95,13 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3
       - EMBEDDING_MODEL=mxbai-embed-large
-      - RETRIEVE_TOP_K=3
+      - RETRIEVE_TOP_K=5
+      - CHUNK_SIZE=2500
+      - CHUNK_OVERLAP=500
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - LOG_LEVEL=INFO
+      - WATCH_DOCS=true
     depends_on:
       - ollama
     networks:
