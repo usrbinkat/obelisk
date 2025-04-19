@@ -50,8 +50,31 @@ tasks:
     desc: Clean build artifacts and kill running mkdocs processes
     cmds:
       - pkill -f "mkdocs serve" || true
+      - docker stop obelisk || true
       - rm -rf site
       - find . -type d -name __pycache__ -exec rm -rf {} +
+      
+  clean-all:
+    desc: Clean build artifacts, stop all obelisk docker containers, and remove images
+    cmds:
+      - task: clean
+      - echo "Stopping all obelisk docker containers..."
+      - docker stop obelisk obelisk-rag ollama open-webui 2>/dev/null || true
+      - echo "Removing obelisk container images..."
+      - docker rmi obelisk-obelisk obelisk-obelisk-rag 2>/dev/null || true
+      
+  clean-all-purge:
+    desc: Clean everything including all containers, images, volumes, and networks
+    cmds:
+      - task: clean
+      - echo "Stopping and removing all obelisk docker containers..."
+      - docker-compose down 2>/dev/null || true
+      - echo "Removing all obelisk volumes..."
+      - docker volume rm obelisk_data obelisk_models obelisk_ollama obelisk_open-webui obelisk_rag-data obelisk_rag-vault 2>/dev/null || true
+      - echo "Removing obelisk network..."
+      - docker network rm obelisk_ollama-net 2>/dev/null || true
+      - echo "Removing all obelisk-related container images..."
+      - docker images | grep obelisk | awk '{print $1}' | xargs docker rmi -f 2>/dev/null || true
 
   docker-build:
     desc: Build the Docker container
