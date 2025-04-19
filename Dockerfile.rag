@@ -41,10 +41,13 @@ ENV EMBEDDING_MODEL="mxbai-embed-large"
 ENV API_HOST="0.0.0.0"
 ENV API_PORT="8000"
 ENV LOG_LEVEL="INFO"
+ENV WATCH_DOCS="true"
 
 # Add a health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:8000/stats || exit 1
 
-# Run the RAG service
-CMD ["python", "-m", "obelisk.rag.cli", "serve", "--watch"]
+# Run the RAG service (will use --watch flag if WATCH_DOCS is true)
+COPY ./docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
