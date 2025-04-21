@@ -51,6 +51,7 @@ replit.nix
 prof/.envrc
 .envrc
 .mcp.json
+cookies.txt
 
 # RAG system
 .obelisk/
