@@ -163,6 +163,7 @@ nav:
     - Overview: cloud/Cloud Native Tooling.md
   - Chatbot:
     - Overview: chatbot/index.md
+    - Architecture Diagram: chatbot/architecture.md
     - Models Configuration: chatbot/models.md
     - Documentation Integration: chatbot/integration.md
     - Open WebUI Configuration: chatbot/openwebui.md

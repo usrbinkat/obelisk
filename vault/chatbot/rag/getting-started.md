@@ -195,9 +195,10 @@ Now that you have the RAG system up and running, you can:
 
 1. Learn about [advanced configuration options](using-rag.md)
 2. Integrate with [Open WebUI](../openwebui.md) for a chat interface
-3. Explore the [RAG architecture](architecture-draft.md) in depth
-4. Read about the [implementation details](implementation.md) if you want to customize the system
-5. Review [evaluation techniques](evaluation.md) to measure and improve performance
+3. View the [complete system architecture diagram](../architecture.md)
+4. Explore the [RAG architecture details](architecture-draft.md) in depth
+5. Read about the [implementation details](implementation.md) if you want to customize the system
+6. Review [evaluation techniques](evaluation.md) to measure and improve performance
 
 ---
 

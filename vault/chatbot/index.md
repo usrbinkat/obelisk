@@ -30,6 +30,8 @@ graph TD
     DocContent --> RAG
 ```
 
+For a comprehensive view of all components and their interactions, see the [complete architecture diagram](architecture.md).
+
 1. Users interact with the Open WebUI interface at `http://localhost:8080`
 2. Queries can be processed either directly by Ollama or through the RAG system
 3. When using RAG, the system retrieves relevant content from your documentation
