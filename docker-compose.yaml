@@ -143,10 +143,12 @@ services:
       - OPENAI_API_KEY=sk-pjxG_ooHLV2x6wMgttfawA
       # Original Obelisk RAG direct connection
       - OBELISK_RAG_API_BASE_URL=http://obelisk-rag:8000
-      # Enable OpenWebUI's built-in RAG features with Tika (disabled by default)
-      - ENABLE_RAG=true
-      - VECTOR_DB=milvus
+      # Enable OpenWebUI's built-in RAG features with Tika
+      - RETRIEVAL_ENABLED=true
+      - RETRIEVAL_VECTOR_STORE=milvus
       - MILVUS_URI=http://milvus:19530
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
       - TIKA_SERVER_URL=http://tika:9998
       - CONTENT_EXTRACTION_ENGINE=tika
     volumes:
@@ -242,9 +244,11 @@ services:
       - API_PORT=8000
       - LOG_LEVEL=INFO
       - WATCH_DOCS=true
-      # Milvus integration (optional, configured but not enabled by default)
-      - VECTOR_DB=chroma
+      # Milvus integration is now enabled
+      - VECTOR_DB=milvus
       - MILVUS_URI=http://milvus:19530
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
     depends_on:
       - ollama
       - milvus
