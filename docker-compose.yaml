@@ -1,4 +1,70 @@
 services:
+  # Milvus ecosystem services
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.18
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  milvus:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.5.10
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+        
   # LiteLLM Proxy - Middleware for multiple LLM providers
   litellm:
     container_name: litellm
@@ -78,7 +144,9 @@ services:
       # Original Obelisk RAG direct connection
       - OBELISK_RAG_API_BASE_URL=http://obelisk-rag:8000
       # Enable OpenWebUI's built-in RAG features with Tika (disabled by default)
-      - ENABLE_RAG=false
+      - ENABLE_RAG=true
+      - VECTOR_DB=milvus
+      - MILVUS_URI=http://milvus:19530
       - TIKA_SERVER_URL=http://tika:9998
       - CONTENT_EXTRACTION_ENGINE=tika
     volumes:
@@ -97,6 +165,7 @@ services:
       - tika
       - ollama
       - obelisk-rag
+      - milvus
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -173,8 +242,12 @@ services:
       - API_PORT=8000
       - LOG_LEVEL=INFO
       - WATCH_DOCS=true
+      # Milvus integration (optional, configured but not enabled by default)
+      - VECTOR_DB=chroma
+      - MILVUS_URI=http://milvus:19530
     depends_on:
       - ollama
+      - milvus
     networks:
       - ollama-net
     restart: unless-stopped
@@ -193,6 +266,10 @@ volumes:
   rag-data:
   rag-vault:
   postgres_data:
+  # Milvus ecosystem volumes
+  milvus_data:
+  etcd_data:
+  minio_data:
 
 networks:
   ollama-net:
