@@ -119,13 +119,21 @@ The planned RAG pipeline will allow:
 - Ensure all links resolve correctly
 - Validate HTML templates with proper syntax
 - Test site rendering across different viewports
+- **CRITICAL**: NEVER commit code without thorough testing first
+- Run appropriate tests for any code changes (`poetry run pytest`)
+- For container changes, test with `docker-compose up` before committing
+- Validate all configuration changes before pushing to a branch
 
 ## Git Commit Standards
 When managing code changes with git, adhere to the following strict standards:
 
 ### Commit Process
-1. **Individual File Commits**: Commit each file individually to maintain atomic, focused changes
-2. **Comprehensive Review**: For each file in `git status`, evaluate whether to:
+1. **Test Before Commit**: ALL code MUST be thoroughly tested before any commit
+   - Run appropriate unit/integration tests for the changed components
+   - For container changes, validate with docker-compose
+   - Verify that the application functions correctly with your changes
+2. **Individual File Commits**: Commit each file individually to maintain atomic, focused changes
+3. **Comprehensive Review**: For each file in `git status`, evaluate whether to:
    - Stage and commit the file
    - Add to `.gitignore` if it's a generated artifact
    - Remove if it's temporary/unnecessary
