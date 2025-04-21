@@ -11,6 +11,7 @@ Obelisk is a tool designed to transform your Obsidian vault into a beautifully r
 - **Obsidian Compatibility**: Works with existing Obsidian vaults
 - **MkDocs Material Theme**: Beautiful, responsive, and feature-rich documentation
 - **AI Integration**: Connect with Ollama and Open WebUI for AI-enhanced content
+- **RAG Support**: Retrieval-Augmented Generation with Milvus vector database
 - **Docker Support**: Easy deployment with containerization
 - **Poetry**: Python dependency management
 - **GitHub Actions**: Automatic deployment to GitHub Pages
