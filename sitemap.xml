@@ -13,6 +13,10 @@
          <lastmod>2025-04-21</lastmod>
     </url>
     <url>
+         <loc>https://usrbinkat.github.io/obelisk/chatbot/containerization/</loc>
+         <lastmod>2025-04-21</lastmod>
+    </url>
+    <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/integration/</loc>
          <lastmod>2025-04-21</lastmod>
     </url>
@@ -70,6 +74,10 @@
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/vector-database/</loc>
+         <lastmod>2025-04-21</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/milvus/integration/</loc>
          <lastmod>2025-04-21</lastmod>
     </url>
     <url>
