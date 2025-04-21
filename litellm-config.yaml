@@ -1,0 +1,47 @@
+# Model configuration - lists all models available through the proxy
+model_list:
+  # Ollama models - direct access to your local models
+  - model_name: ollama/llama3
+    litellm_params:
+      model: ollama/llama3
+      api_base: http://ollama:11434
+      drop_params: true # Removes extra parameters when calling specific models
+
+  # OpenAI models - requires API key
+  - model_name: openai/gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      drop_params: true
+
+  # Gemini models - requires API key
+  - model_name: gemini/gemini-1.5-pro
+    litellm_params:
+      model: gemini/gemini-1.5-pro
+      api_key: os.environ/GEMINI_API_KEY
+      rpm: 15
+      tpm: 1000000
+      drop_params: true
+
+  # Embedding model for RAG
+  - model_name: gemini/text-embedding-004
+    litellm_params:
+      model: gemini/text-embedding-004
+      api_key: os.environ/GEMINI_API_KEY
+      rpm: 15
+      tpm: 1000000
+      drop_params: true
+
+# General settings
+general_settings:
+  # Forward OpenAI Organization ID for enterprise customers
+  forward_openai_org_id: true
+
+# LiteLLM specific settings
+litellm_settings:
+  # Enable schema validation for requests
+  enable_json_schema_validation: True
+  # Enable Langfuse tracing (optional)
+  # langfuse_project_id: os.environ/LANGFUSE_PROJECT_ID
+  # langfuse_public_key: os.environ/LANGFUSE_PUBLIC_KEY
+  # langfuse_secret_key: os.environ/LANGFUSE_SECRET_KEY
