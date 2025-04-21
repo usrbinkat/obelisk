@@ -167,6 +167,7 @@ nav:
     - Models Configuration: chatbot/models.md
     - Documentation Integration: chatbot/integration.md
     - Open WebUI Configuration: chatbot/openwebui.md
+    - LiteLLM Integration: chatbot/litellm-integration.md
     - RAG Pipeline:
       - Overview: chatbot/rag/getting-started.md
       - Architecture Design: chatbot/rag/architecture-draft.md

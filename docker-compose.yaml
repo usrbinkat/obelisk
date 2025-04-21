@@ -1,19 +1,86 @@
 services:
+  # LiteLLM Proxy - Middleware for multiple LLM providers
+  litellm:
+    container_name: litellm
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000" # LiteLLM proxy API
+    environment:
+      - LITELLM_MASTER_KEY=sk-1234 # Master key for admin access
+      - LITELLM_ADMIN_PASSWORD=admin # Admin password for web UI
+      - DATABASE_URL=postgresql://postgres:postgres@litellm_db:5432/postgres
+      - OLLAMA_API_BASE=http://ollama:11434
+      - OBELISK_RAG_API_BASE=http://obelisk-rag:8000
+      - STORE_MODEL_IN_DB=true
+    command: ["--port", "4000"]
+    networks:
+      - ollama-net
+    depends_on:
+      - litellm_db
+      - ollama
+      - obelisk-rag
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # PostgreSQL Database for LiteLLM
+  litellm_db:
+    image: postgres:16.1
+    container_name: litellm_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${LITELLM_POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${LITELLM_POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PORT=${LITELLM_POSTGRES_PORT:-5432}
+      - POSTGRES_DATABASE=${LITELLM_POSTGRES_DATABASE:-postgres}
+      - POSTGRES_HOST=${LITELLM_POSTGRES_HOST:-litellm_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Tika service for document processing in OpenWebUI
+  tika:
+    image: apache/tika:latest-full
+    container_name: tika
+    ports:
+      - "9998:9998"
+    restart: unless-stopped
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # OpenWebUI - Front-end interface
   open-webui:
     container_name: open-webui
     image: ghcr.io/open-webui/open-webui:main
     environment:
       - MODEL_DOWNLOAD_DIR=/models
-      # Point OpenWebUI to use Obelisk RAG as its primary API
-      - OLLAMA_API_BASE_URL=http://obelisk-rag:8000
-      - OLLAMA_API_URL=http://obelisk-rag:8000
-      - OLLAMA_BASE_URL=http://obelisk-rag:8000
       - LOG_LEVEL=debug
-      # We need to use built-in RAG features but point to our service
-      - RAG_ENABLED=false
-      # Additional settings to ensure OpenWebUI uses our API
-      - OPENAI_API_BASE_URL=http://obelisk-rag:8000/v1
-      - OPENAI_API_KEY=dummy-key
+      # Connect to both Ollama directly and LiteLLM proxy
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+      - OLLAMA_API_URL=http://ollama:11434
+      # LiteLLM proxy access (can be configured in UI)
+      - OPENAI_API_BASE_URL=http://litellm:4000
+      - OPENAI_API_KEY=sk-pjxG_ooHLV2x6wMgttfawA
+      # Original Obelisk RAG direct connection
+      - OBELISK_RAG_API_BASE_URL=http://obelisk-rag:8000
+      # Enable OpenWebUI's built-in RAG features with Tika (disabled by default)
+      - ENABLE_RAG=false
+      - TIKA_SERVER_URL=http://tika:9998
+      - CONTENT_EXTRACTION_ENGINE=tika
     volumes:
       - data:/data
       - models:/models
@@ -26,6 +93,8 @@ services:
         max-size: "5m"
         max-file: "2"
     depends_on:
+      - litellm
+      - tika
       - ollama
       - obelisk-rag
     extra_hosts:
@@ -33,7 +102,8 @@ services:
     networks:
       - ollama-net
     restart: unless-stopped
-
+  
+  # Ollama service for local model hosting
   ollama:
     container_name: ollama
     image: ollama/ollama:latest
@@ -79,6 +149,7 @@ services:
     restart: unless-stopped
     command: ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
 
+  # Preserve original Obelisk RAG service
   obelisk-rag:
     container_name: obelisk-rag
     build:
@@ -121,6 +192,7 @@ volumes:
   open-webui:
   rag-data:
   rag-vault:
+  postgres_data:
 
 networks:
   ollama-net:
