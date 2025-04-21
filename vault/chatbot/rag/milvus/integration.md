@@ -1,3 +1,8 @@
+---
+title: Milvus Integration
+date: 2025-04-21
+---
+
 # Milvus Vector Database Integration
 
 This document describes the integration of Milvus vector database into the Obelisk project to enhance RAG (Retrieval-Augmented Generation) capabilities.

@@ -1,3 +1,8 @@
+---
+title: Containerization Architecture
+date: 2025-04-21
+---
+
 # Obelisk Containerization Architecture
 
 This document provides a comprehensive overview of Obelisk's containerization architecture, focusing on the Docker Compose configuration, container dependencies, and microservice interactions.
@@ -353,8 +358,8 @@ To maintain the containerized infrastructure:
 
 For additional information on specific components:
 
-- [Docker Configuration](/vault/development/docker.md): Core Docker setup information
-- [Architecture Diagram](/vault/chatbot/architecture.md): Full system architecture
-- [Vector Database Integration](/vault/chatbot/rag/vector-database.md): Details on vector database options
-- [Milvus Integration](milvus-integration.md): Specific details on Milvus configuration
-- [Using RAG](/vault/chatbot/rag/using-rag.md): How to use RAG features
+- [Docker Configuration](../development/docker.md): Core Docker setup information
+- [Architecture Diagram](architecture.md): Full system architecture
+- [Vector Database Integration](rag/vector-database.md): Details on vector database options
+- [Milvus Integration](rag/milvus/integration.md): Specific details on Milvus configuration
+- [Using RAG](rag/using-rag.md): How to use RAG features

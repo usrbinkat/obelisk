@@ -168,6 +168,7 @@ nav:
     - Documentation Integration: chatbot/integration.md
     - Open WebUI Configuration: chatbot/openwebui.md
     - LiteLLM Integration: chatbot/litellm-integration.md
+    - Containerization Architecture: chatbot/containerization.md
     - RAG Pipeline:
       - Overview: chatbot/rag/getting-started.md
       - Architecture Design: chatbot/rag/architecture-draft.md
@@ -178,6 +179,7 @@ nav:
       - Query Pipeline: chatbot/rag/query-pipeline.md
       - Ollama Integration: chatbot/rag/ollama-integration.md
       - OpenWebUI Integration: chatbot/rag/openwebui-integration.md
+      - Milvus Integration: chatbot/rag/milvus/integration.md
       - Evaluation: chatbot/rag/evaluation.md
       - Documentation: chatbot/rag/README.md
   - Customization:
