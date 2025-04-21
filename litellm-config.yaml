@@ -31,11 +31,49 @@ model_list:
       rpm: 15
       tpm: 1000000
       drop_params: true
+      
+  # Obelisk RAG - custom implementation
+  - model_name: obelisk-rag/llama3
+    litellm_params:
+      model: openai/gpt-3.5-turbo # Just a placeholder, obelisk-rag has its own model handling
+      api_base: http://obelisk-rag:8000
+      api_key: dummy-key
+      drop_params: true
+
+  # Obelisk RAG embeddings
+  - model_name: obelisk-rag/embeddings
+    litellm_params:
+      model: openai/text-embedding-ada-002 # Placeholder, obelisk-rag uses its own embedding model
+      api_base: http://obelisk-rag:8000
+      api_key: dummy-key
+      drop_params: true
+
+# Router settings
+router_settings:
+  # Route embeddings to correct endpoints
+  embedding_models:
+    - gemini/text-embedding-004
+    - obelisk-rag/embeddings
+  # Default timeout in seconds
+  timeout: 30
+  # Routing strategy
+  routing_strategy: simple-shuffle
+  # Number of retries
+  num_retries: 2
 
 # General settings
 general_settings:
   # Forward OpenAI Organization ID for enterprise customers
   forward_openai_org_id: true
+
+# Custom endpoint settings for models that implement OpenAI API format
+custom_endpoints:
+  # Map from models to URL path prefixes
+  obelisk-rag: 
+    url: http://obelisk-rag:8000
+    models:
+      - obelisk-rag/llama3
+      - obelisk-rag/embeddings
 
 # LiteLLM specific settings
 litellm_settings:
