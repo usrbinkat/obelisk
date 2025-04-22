@@ -56,7 +56,6 @@ RUN echo \
   && echo
 
 RUN npm install -g minimist
-USER ubuntu
 
 ##################################################################################
 # Install Poetry for Python dependency management
@@ -141,4 +140,5 @@ RUN set -ex \
 #    && ${dir_clean} \
 #    && ${TEST} \
 #    && echo
-#USER vscode
+
+USER ubuntu

@@ -50,31 +50,35 @@ tasks:
     desc: Clean build artifacts and kill running mkdocs processes
     cmds:
       - pkill -f "mkdocs serve" || true
-      - docker stop obelisk || true
       - rm -rf site
-      - find . -type d -name __pycache__ -exec rm -rf {} +
+      - find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+      - echo "Basic cleanup completed."
       
   clean-all:
-    desc: Clean build artifacts, stop all obelisk docker containers, and remove images
+    desc: Stop all docker containers but preserve volumes
     cmds:
       - task: clean
-      - echo "Stopping all obelisk docker containers..."
-      - docker stop obelisk obelisk-rag ollama open-webui 2>/dev/null || true
-      - echo "Removing obelisk container images..."
-      - docker rmi obelisk-obelisk obelisk-obelisk-rag 2>/dev/null || true
+      - echo "Stopping all services (keeping volumes)..."
+      - docker-compose down
+      - echo "Removing obelisk images..."
+      - docker rmi obelisk-obelisk obelisk-obelisk-rag obelisk-init-service 2>/dev/null || true
+      - echo "Clean-all completed."
       
   clean-all-purge:
     desc: Clean everything including all containers, images, volumes, and networks
     cmds:
       - task: clean
-      - echo "Stopping and removing all obelisk docker containers..."
-      - docker-compose down 2>/dev/null || true
-      - echo "Removing all obelisk volumes..."
-      - docker volume rm obelisk_data obelisk_models obelisk_ollama obelisk_open-webui obelisk_rag-data obelisk_rag-vault 2>/dev/null || true
-      - echo "Removing obelisk network..."
-      - docker network rm obelisk_ollama-net 2>/dev/null || true
-      - echo "Removing all obelisk-related container images..."
-      - docker images | grep obelisk | awk '{print $1}' | xargs docker rmi -f 2>/dev/null || true
+      - echo "Stopping and removing all containers and volumes with docker-compose..."
+      - docker-compose down -v --remove-orphans
+      - echo "Removing all built images with docker-compose..."
+      - docker-compose rm -fsv
+      - echo "Pruning project networks..."
+      - docker-compose down --rmi all
+      # Handle edge cases
+      - echo "Handling any resources not removed by docker-compose..."
+      - docker volume ls | grep -E '^obelisk_' | awk '{print $2}' | xargs docker volume rm -f 2>/dev/null || true
+      - docker images | grep -E '^obelisk-' | awk '{print $1":"$2}' | xargs docker rmi -f 2>/dev/null || true
+      - echo "Clean-all-purge completed."
 
   docker-build:
     desc: Build the Docker container
