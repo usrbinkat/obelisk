@@ -180,6 +180,7 @@ nav:
       - Ollama Integration: chatbot/rag/ollama-integration.md
       - OpenWebUI Integration: chatbot/rag/openwebui-integration.md
       - Milvus Integration: chatbot/rag/milvus/integration.md
+      - OpenAI Integration: chatbot/rag/openai/integration.md
       - Evaluation: chatbot/rag/evaluation.md
       - Documentation: chatbot/rag/README.md
   - Customization:
