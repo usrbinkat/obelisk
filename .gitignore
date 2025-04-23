@@ -52,6 +52,7 @@ prof/.envrc
 .envrc
 .mcp.json
 cookies.txt
+TASK.md
 
 # RAG system
 .obelisk/
