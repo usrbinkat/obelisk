@@ -2,146 +2,154 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://usrbinkat.github.io/obelisk/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/architecture/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/containerization/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/integration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/litellm-integration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/models/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/openwebui/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/architecture-draft/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/evaluation/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/getting-started/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/implementation-status/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/implementation/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/ollama-integration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/openwebui-integration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/query-pipeline/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/using-rag/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/vector-database/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/milvus/integration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/chatbot/rag/openai/integration/</loc>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/cloud/Cloud%20Native%20Tooling/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/mkdocs-configuration/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/css/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/html/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/javascript/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/python/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/customization/versioning/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/deployment/container-initialization/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
+    </url>
+    <url>
+         <loc>https://usrbinkat.github.io/obelisk/deployment/testing-openai-integration/</loc>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/docker/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/documentation/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/editor-config/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/git-config/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/python-config/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
     <url>
          <loc>https://usrbinkat.github.io/obelisk/development/task-runner/</loc>
-         <lastmod>2025-04-22</lastmod>
+         <lastmod>2025-04-23</lastmod>
     </url>
 </urlset>
