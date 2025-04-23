@@ -53,17 +53,23 @@ tasks:
       - rm -rf site
       - find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
       - echo "Basic cleanup completed."
-      
+
   clean-all:
-    desc: Stop all docker containers but preserve volumes
+    desc: Stop all containers but preserve Ollama volume and images for faster testing
     cmds:
       - task: clean
-      - echo "Stopping all services (keeping volumes)..."
+      - echo "Stopping all services..."
       - docker-compose down
+      - echo "Stopping specific containers..."
+      - docker stop init-service litellm litellm_db milvus-standalone milvus-etcd milvus-minio 2>/dev/null || true
+      - echo "Removing specific containers..."
+      - docker rm -f init-service litellm litellm_db milvus-standalone milvus-etcd milvus-minio 2>/dev/null || true
+      - echo "Removing volumes (preserving Ollama models)..."
+      - docker volume rm obelisk_config obelisk_etcd_data obelisk_milvus_data obelisk_minio_data obelisk_postgres_data obelisk_tokens 2>/dev/null || true
       - echo "Removing obelisk images..."
       - docker rmi obelisk-obelisk obelisk-obelisk-rag obelisk-init-service 2>/dev/null || true
-      - echo "Clean-all completed."
-      
+      - echo "Clean-all completed. Ollama volumes and container images preserved for faster testing."
+
   clean-all-purge:
     desc: Clean everything including all containers, images, volumes, and networks
     cmds:
@@ -114,3 +120,8 @@ tasks:
     desc: "Set the default version (usage: task version-set-default -- 1.0.0)"
     cmds:
       - poetry run mike set-default --push {{.CLI_ARGS}}
+
+  test-prep-openai:
+    desc: Prepare environment for OpenAI integration testing (runs long-duration commands)
+    cmds:
+      - ./hack/test_prep_openai.sh

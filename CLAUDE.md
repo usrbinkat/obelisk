@@ -3,34 +3,48 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites with AI integration through Ollama and Open WebUI. It focuses on preserving Obsidian's rich features while delivering a modern, responsive documentation website with integrated AI chat capabilities.
+Obelisk is a tool that transforms Obsidian vaults into MkDocs Material Theme sites with AI integration through Ollama and Open WebUI. It preserves Obsidian's rich features while delivering a modern documentation website with AI chat capabilities, including a RAG (Retrieval-Augmented Generation) pipeline for context-aware responses.
+
+## Repository
+- GitHub: https://github.com/usrbinkat/obelisk
 
 ## Core Features
-- Convert Obsidian vaults to MkDocs Material Theme sites
+- Convert Obsidian vaults to MkDocs Material Theme sites (wiki links, callouts, comments)
 - Built-in AI chatbot integration via Ollama and Open WebUI
-- RAG (Retrieval-Augmented Generation) pipeline (planned)
+- RAG pipeline for context-aware document retrieval
+- Vector database integration (ChromaDB with Milvus planned)
 - Custom styling and theming capabilities
 - Documentation versioning with mike
 - Docker and container-based deployment
 
 ## Architecture
 
-The project consists of several key components:
+The project consists of several integrated components:
 
-1. **Python Package** (`/obelisk/`): Core conversion utilities
+1. **Python Package** (`/obelisk/`): Core utilities
    - `cli.py`: Command-line interface
    - `config.py`: Configuration management
    - `convert.py`: Obsidian to MkDocs conversion
+   - `/rag/`: RAG system components
+     - `service.py`: Main RAG service coordinator
+     - `document.py`: Document processing and chunking
+     - `embedding.py`: Vector embedding generation
+     - `storage.py`: Vector database integration
+     - `api.py`: OpenAI-compatible API endpoints
 
 2. **Documentation Content** (`/vault/`): Source content and customizations
    - `stylesheets/extra.css`: Custom CSS styles
    - `javascripts/extra.js`: Custom JavaScript
    - `overrides/main.html`: HTML template overrides
 
-3. **Configuration Files**:
-   - `mkdocs.yml`: MkDocs configuration
-   - `pyproject.toml`: Python package configuration
-   - `docker-compose.yaml`: Container orchestration
+3. **Container Architecture**:
+   - `obelisk`: MkDocs documentation server (port 8000)
+   - `ollama`: Local LLM serving (port 11434)
+   - `open-webui`: Chat interface (port 8080)
+   - `obelisk-rag`: RAG API service (port 8001)
+   - `milvus`: Vector database (port 19530)
+   - `litellm`: LLM API proxy for integration
+   - `init-service`: Container initialization
 
 ## Project Structure
 ```
@@ -86,25 +100,39 @@ EOF
 
 ## AI Integration
 
-Obelisk integrates AI capabilities through:
+Obelisk integrates AI capabilities through a multi-service architecture:
 
 1. **Ollama**: Lightweight local model server
    - Port: `11434`
-   - Supports models like Llama2, Mistral, Phi, Gemma
+   - Supports models like Llama3, Mistral, Phi, Gemma
+   - Used for both text generation and embeddings
 
 2. **Open WebUI**: Web interface for chat
    - Port: `8080`
    - Connected to Ollama for model inference
+   - Supports direct RAG integration
 
 3. **Documentation Server**: MkDocs site
    - Port: `8000`
-   - Can be integrated with chat UI
+   - Integrated with chat UI via JavaScript
 
-The planned RAG pipeline will allow:
-- Document processing and embedding
-- Vector database storage
-- Query processing and retrieval
-- Enhanced AI responses with document context
+4. **RAG API Service**: OpenAI-compatible API
+   - Port: `8001`
+   - Processes and indexes markdown documents
+   - Handles document retrieval via vector search
+   - Augments LLM responses with relevant context
+
+5. **LiteLLM Proxy**: LLM middleware
+   - Port: `4000`
+   - Provides unified interface for multiple LLM providers
+   - Handles authentication and routing
+
+The RAG pipeline flow:
+1. Document processing: Markdown files are parsed, chunked, and metadata extracted
+2. Embedding generation: Text chunks are converted to vector embeddings via Ollama
+3. Vector storage: Embeddings stored in ChromaDB/Milvus with metadata
+4. Query processing: User questions embedded and similar documents retrieved
+5. Response generation: Context and query sent to LLM for enhanced responses
 
 ## Code Style Guidelines
 - Python: Follow PEP 8 standards, target Python 3.12
@@ -194,3 +222,17 @@ test(pipeline): add comprehensive unit tests for document chunking
 - Poetry for package management
 - Docker and Docker Compose (for containerization)
 - NVIDIA Container Toolkit (for GPU acceleration with Ollama)
+- LangChain and LangChain-Ollama for RAG pipelines
+- ChromaDB/Milvus for vector storage
+- FastAPI and Uvicorn for API services
+- Watchdog for file monitoring
+
+## RAG Implementation Status
+- Core RAG pipeline is functional using ChromaDB
+- OpenAI-compatible API endpoint available at `/v1/chat/completions`
+- Document chunking and embedding operational
+- Milvus integration planned but not fully implemented
+- LiteLLM integration for multiple model providers
+- File watching for real-time document updates
+- Support for YAML frontmatter metadata extraction
+- Hierarchical chunking based on markdown structure

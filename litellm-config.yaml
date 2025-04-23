@@ -7,10 +7,36 @@ model_list:
       api_base: http://ollama:11434
       drop_params: true # Removes extra parameters when calling specific models
 
+  - model_name: ollama/mxbai-embed-large
+    litellm_params:
+      model: ollama/mxbai-embed-large
+      api_base: http://ollama:11434
+      drop_params: true
+
   # OpenAI models - requires API key
   - model_name: openai/gpt-4o
     litellm_params:
       model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      drop_params: true
+
+  # OpenAI embedding model
+  - model_name: openai/text-embedding-3-large
+    litellm_params:
+      model: openai/text-embedding-3-large
+      api_key: os.environ/OPENAI_API_KEY
+      drop_params: true
+
+  # Model aliases without provider prefixes for simpler referencing
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      drop_params: true
+  
+  - model_name: text-embedding-3-large
+    litellm_params:
+      model: openai/text-embedding-3-large
       api_key: os.environ/OPENAI_API_KEY
       drop_params: true
 
@@ -23,7 +49,7 @@ model_list:
       tpm: 1000000
       drop_params: true
 
-  # Embedding model for RAG
+  # Gemini embedding model for RAG
   - model_name: gemini/text-embedding-004
     litellm_params:
       model: gemini/text-embedding-004
@@ -50,10 +76,34 @@ model_list:
 
 # Router settings
 router_settings:
-  # Route embeddings to correct endpoints
+  # Route embeddings to correct endpoints - prioritize OpenAI when available
   embedding_models:
+    - openai/text-embedding-3-large
+    - text-embedding-3-large
     - gemini/text-embedding-004
+    - ollama/mxbai-embed-large
     - obelisk-rag/embeddings
+  
+  # Fallback configuration for model resilience
+  fallbacks: [
+    {
+      "model": "openai/gpt-4o",
+      "fallback_model": "ollama/llama3"
+    },
+    {
+      "model": "gpt-4o", 
+      "fallback_model": "ollama/llama3"
+    },
+    {
+      "model": "openai/text-embedding-3-large", 
+      "fallback_model": "ollama/mxbai-embed-large"
+    },
+    {
+      "model": "text-embedding-3-large", 
+      "fallback_model": "ollama/mxbai-embed-large"
+    }
+  ]
+  
   # Default timeout in seconds
   timeout: 30
   # Routing strategy

@@ -7,6 +7,32 @@ date: 2025-04-22
 
 This comprehensive guide details the initialization process for the Obelisk container stack and provides a step-by-step testing procedure to ensure your deployment is functioning correctly. Whether you're a junior developer setting up Obelisk for the first time or a seasoned architect deploying in a production environment, this document will guide you through the entire process.
 
+> **⚠️ IMPORTANT NOTE FOR AI-ASSISTED DEPLOYMENTS ⚠️**  
+> When using Claude Code or similar AI assistants to help with deployment:
+> 
+> Several commands in this initialization workflow exceed the 2-minute execution time limit imposed by AI assistants:
+> - `task clean-all-purge` (or equivalent container cleanup)
+> - `docker-compose build` (can take 5+ minutes)
+> - `docker-compose pull` (can take 5+ minutes)
+> - The Ollama model download step (can take 5-15 minutes depending on models and connection)
+> 
+> **Recommendation for AI-assisted workflows**:
+> 1. Run these long-running commands manually BEFORE asking the AI to assist:
+>    ```bash
+>    # Run these commands manually first
+>    task clean-all-purge  # or equivalent cleanup commands
+>    docker-compose build
+>    docker-compose pull
+>    
+>    # Optionally pre-pull models (helpful but not required)
+>    docker-compose up -d ollama
+>    docker-compose exec ollama ollama pull llama3
+>    docker-compose exec ollama ollama pull mxbai-embed-large
+>    ```
+> 2. Once these steps complete, you can engage the AI assistant for the remaining initialization and testing steps.
+> 
+> This approach prevents timeout issues during AI-assisted deployments and ensures a smoother experience.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -200,16 +226,9 @@ sequenceDiagram
 
 This section provides a detailed walkthrough of the initialization process, from repository setup to running all services.
 
-### 1. Repository Setup
+### 1. Environment Setup
 
-```bash
-# Clone the repository
-git clone https://github.com/usrbinkat/obelisk.git
-cd obelisk
-
-# If you're working with a specific feature branch
-git checkout feat/container-initialization  # Optional
-```
+Ensure you are in the Obelisk project directory before proceeding with the deployment steps.
 
 ### 2. Clean Environment
 
@@ -282,7 +301,8 @@ Technical notes:
 ### 7. Run the Initialization Service
 
 ```bash
-# Run the initialization service (this will run and exit when complete)
+# Run the initialization service in foreground mode to observe the initialization process
+# IMPORTANT: This command will run and exit when complete - don't interrupt it
 docker-compose up init-service
 ```
 
@@ -297,6 +317,46 @@ This is a critical step where:
 6. Verification confirms successful initialization
 
 Wait for this service to complete before proceeding. The process takes approximately 5-10 minutes on first run, as it downloads models.
+
+#### Verifying init-service Success
+
+Before proceeding to the next step, verify that the initialization service completed successfully:
+
+```bash
+# Check the init-service logs - look for "Initialization complete" at the end
+docker-compose logs init-service | tail -n 20
+
+# Verify token file was created
+docker-compose exec litellm test -f /app/tokens/api_tokens.env && echo "Token file exists" || echo "Token file missing"
+
+# Check if Ollama models were successfully downloaded
+docker-compose exec ollama ollama list
+```
+
+You should see both `llama3` and `mxbai-embed-large` models in the Ollama list output. If any of these checks fail, review the full init-service logs for errors:
+
+```bash
+docker-compose logs init-service
+```
+
+Common causes of initialization failure include:
+- Network connectivity issues during model downloads
+- LiteLLM API not ready when tokens are being registered
+- Insufficient disk space for model downloads
+- Token registration issues with LiteLLM
+
+If you see `Error: LiteLLM API authentication failed` in the logs, you may need to manually register the token:
+
+```bash
+# Get the generated token
+LITELLM_TOKEN=$(docker-compose exec -T litellm grep LITELLM_API_TOKEN /app/tokens/api_tokens.env | cut -d= -f2 | tr -d ' \t\n\r')
+
+# Register it with LiteLLM
+curl -s -X POST "http://localhost:4000/key/generate" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
+  -d "{\"key\": \"$LITELLM_TOKEN\", \"metadata\": {\"description\": \"Manual registration\"}}"
+```
 
 ### 8. Start Application Services
 

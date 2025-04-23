@@ -50,7 +50,8 @@ function pull_model() {
       
       # Register model with LiteLLM if available
       if [ -n "$LITELLM_API_URL" ]; then
-        echo "Registering model with LiteLLM API..."
+        # Try to register with LiteLLM API but don't block on it
+        echo "Attempting to register model with LiteLLM API..."
         
         # Format model information based on its type
         local model_type="completion"
@@ -58,24 +59,50 @@ function pull_model() {
           model_type="embedding"
         fi
         
-        # Register model with LiteLLM using master key for admin access
-        curl -s -X POST "$LITELLM_API_URL/model/new" \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
-          -d "{
-              \"model_name\": \"$model_name\",
-              \"litellm_params\": {
-                \"model\": \"ollama/$model_name\",
-                \"api_base\": \"$OLLAMA_API_URL\"
-              }
-          }" > /dev/null
+        # Create a temporary file for the JSON payload to ensure proper formatting
+        TEMP_JSON_FILE=$(mktemp)
+        cat > "$TEMP_JSON_FILE" << EOF
+{
+  "model_name": "$model_name",
+  "litellm_params": {
+    "model": "ollama/$model_name",
+    "api_base": "$OLLAMA_API_URL",
+    "drop_params": true
+  }
+}
+EOF
+        
+        # Non-blocking check for LiteLLM availability with authentication
+        if curl -s --connect-timeout 2 -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" "$LITELLM_API_URL/health" > /dev/null 2>&1 || \
+           curl -s --connect-timeout 2 -H "Authorization: Bearer ${LITELLM_API_TOKEN:-sk-1234}" "$LITELLM_API_URL/models" > /dev/null 2>&1 || \
+           curl -s --connect-timeout 2 "$LITELLM_API_URL/v1/models" > /dev/null 2>&1 || \
+           curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" "$LITELLM_API_URL/health" | grep -q "401"; then
+          echo "LiteLLM API is available, registering model..."
           
-        # Check if model registration was successful
-        if [ $? -eq 0 ]; then
-          echo "Model '$model_name' registered with LiteLLM API successfully"
+          # Send the properly formatted JSON with master key (admin privileges)
+          curl -s -X POST "$LITELLM_API_URL/model/new" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
+            -d @"$TEMP_JSON_FILE"
+            
+          # Check if model registration was successful
+          if [ $? -eq 0 ]; then
+            echo "Model '$model_name' registered with LiteLLM API successfully"
+          else
+            echo "Warning: Failed to register model '$model_name' with LiteLLM API"
+          fi
         else
-          echo "Warning: Failed to register model '$model_name' with LiteLLM API"
+          echo "LiteLLM API not immediately available - model will be registered during service configuration"
+          
+          # Store model info for later registration
+          mkdir -p "/app/config/pending_models"
+          
+          # Store the model details for later registration
+          cp "$TEMP_JSON_FILE" "/app/config/pending_models/${model_name}.json"
         fi
+        
+        # Clean up temp file
+        rm "$TEMP_JSON_FILE"
       fi
       
       return 0
