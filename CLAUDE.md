@@ -236,3 +236,13 @@ test(pipeline): add comprehensive unit tests for document chunking
 - File watching for real-time document updates
 - Support for YAML frontmatter metadata extraction
 - Hierarchical chunking based on markdown structure
+
+## MCP Server Skills
+The following MCP servers are available for use:
+- `puppeteer`: Browser automation with Puppeteer
+- `playwright`: Browser automation with Playwright
+- `pulumi`: Infrastructure as code with Pulumi
+- `github`: GitHub API integration
+- `sequential-thinking`: Sequential thinking for complex problems
+- `gitlab`: GitLab API integration
+- `kubernetes`: Kubernetes integration

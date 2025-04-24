@@ -65,11 +65,18 @@ def check_rag_env_vars():
     print("\n3. Checking RAG configuration in OpenWebUI...")
     try:
         # Check Docker environment variables for OpenWebUI
-        print("Examining docker-compose.yaml configuration...")
+        print("Examining docker-compose configuration...")
         import os
         import yaml
         
-        with open('/workspaces/obelisk/docker-compose.yaml', 'r') as file:
+        # Use new path structure
+        compose_path = '/workspaces/obelisk/deployments/docker/compose/dev.yaml'
+        # Fallback to original path if new structure not found
+        if not os.path.exists(compose_path):
+            compose_path = '/workspaces/obelisk/docker-compose.yaml'
+            
+        print(f"Using compose file: {compose_path}")
+        with open(compose_path, 'r') as file:
             compose = yaml.safe_load(file)
         
         # Extract OpenWebUI environment variables
