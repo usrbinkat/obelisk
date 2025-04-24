@@ -1,19 +1,6 @@
 # Obelisk Docker Infrastructure
 
-This directory contains the Docker infrastructure for the Obelisk project, organized according to best practices for container-based deployment.
-
-## Current Progress
-
-The Docker infrastructure reorganization is currently in progress:
-
-- [x] Initial directory structure created
-- [x] Base Dockerfiles moved to the new structure
-- [x] Docker Compose files reorganized by component
-- [x] Development script created for testing
-- [ ] Refactor Dockerfiles for optimized builds
-- [ ] Implement multi-stage builds
-- [ ] Optimize configuration management
-- [ ] Add production environment configuration
+This directory contains the Docker infrastructure for the Obelisk project, organized according to best practices for container-based deployment. It provides a modular and maintainable structure for running the Obelisk stack with its various services.
 
 ## Directory Structure
 
@@ -49,23 +36,59 @@ Obelisk consists of several integrated services:
 6. **Open WebUI**: Web interface for chat
 7. **Initialization Service**: Container setup and configuration
 
-## Usage (Development)
+## Usage
 
-To start the development environment with the new structure:
+The Docker infrastructure is managed through Task commands from the project root:
 
 ```bash
-./scripts/dev-docker.sh
+# Start the entire stack in detached mode
+task docker
+
+# Build and start services (with rebuilding containers)
+task docker-build
+
+# Validate Docker Compose configuration
+task docker-config
+
+# Check running containers
+task docker-ps
+
+# View logs (add service name to see specific service)
+task docker-logs -- [service]
+
+# Stop services
+task docker-stop
+
+# Stop and remove services
+task docker-down
+
+# Stop, remove services and clean up volumes
+task docker-clean
+
+# Run initialization tests
+task docker-test
 ```
 
-This script:
-1. Sets up the necessary configuration files
-2. Creates a default `.env` file if needed
-3. Starts the Docker Compose services using the development configuration
+## Service Dependencies
 
-## Next Steps
+The following diagram shows service dependencies:
 
-1. Refactor Dockerfiles to implement multi-stage builds
-2. Create production-specific Docker Compose files
-3. Optimize service configurations for different environments
-4. Implement Kubernetes manifests for production deployment
-5. Add comprehensive documentation for container architecture
+```
+obelisk (MkDocs)  ──────────────────────┐
+                                        │
+ollama ────┬─── litellm ─── litellm_db  │
+           │         │                  │
+           │         ├─── tika          │
+           │         │                  │
+           ├─── milvus ─── etcd         │
+           │    │        │              │
+           │    └─── minio              │
+           │                            │
+           └─── obelisk-rag ────────────┤
+                                        │
+                  open-webui ───────────┘
+```
+
+## Environment Configuration
+
+All service configurations for the development environment are centralized in the `docker-compose/dev.yaml` file. Environment variables can be set through an `.env` file in the project root or provided directly to the Docker Compose command.
