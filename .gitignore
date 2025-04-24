@@ -56,3 +56,4 @@ cookies.txt
 # RAG system
 .obelisk/
 .chroma/
+.test_artifacts/
