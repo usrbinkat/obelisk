@@ -10,11 +10,15 @@ tests/
 ├── data/                          # Test data for all tests
 ├── unit/                          # Unit tests
 │   ├── cli/                       # CLI tests
-│   ├── core/                      # Core module tests
+│   ├── common/                    # Common utilities tests
 │   └── rag/                       # RAG unit tests
 ├── integration/                   # Integration tests
 │   └── rag/                       # RAG integration tests
-└── e2e/                           # End-to-end tests
+├── e2e/                           # End-to-end tests
+└── scripts/                       # Test and utility scripts
+    ├── docker/                    # Docker container testing
+    ├── integration/               # Integration test scripts
+    └── debug/                     # Debugging utilities
 ```
 
 ## Test Categories
@@ -22,6 +26,31 @@ tests/
 - **Unit Tests**: Test individual components in isolation
 - **Integration Tests**: Test the interaction between multiple components
 - **End-to-End Tests**: Test the entire system as a whole
+- **Utility Scripts**: Scripts for testing, debugging, and environment validation
+
+## Test & Utility Scripts
+
+The `scripts/` directory contains various utility scripts:
+
+- `test_coverage_check.py`: Analyzes test coverage for the src-layout pattern
+- `test_rag.md`: Documentation for RAG testing procedures
+
+### Docker Scripts (`scripts/docker/`)
+- `test_init.py`: Validates container initialization process
+- `check_container_versions.sh`: Checks latest versions of container images
+
+### Integration Scripts (`scripts/integration/`)
+- `test_rag_e2e.py`: End-to-end tests for the RAG system
+- `test_rag_milvus.py`: Tests for Milvus integration with RAG
+- `test_rag.py`: RAG system tests
+- `test_milvus.py`: Basic Milvus connection and operation tests
+- `test_litellm_openai.py`: Tests for LiteLLM with OpenAI integration
+- `test_openai_integration.sh`: Tests for OpenAI API integration
+- `test_e2e_openai.py`: End-to-end OpenAI API integration tests
+
+### Debug Scripts (`scripts/debug/`)
+- `test_debug.py`: General debugging script
+- `test_debug_storage.py`: Storage-specific debugging
 
 ## Running Tests
 
