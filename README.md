@@ -1,21 +1,21 @@
 # Obelisk
 
-Publish Obsidian vaults as MkDocs Material Theme GitHub Pages with AI integration.
+RAG system with vector storage and AI integration.
 
 ## Overview
 
-Obelisk is a tool designed to transform your Obsidian vault into a beautifully rendered static site using MkDocs with the Material theme. It features built-in AI capabilities through integration with Ollama and Open WebUI.
+Obelisk is a RAG (Retrieval-Augmented Generation) system designed to provide context-aware AI interactions. It features a robust architecture for document processing, vector embedding, and AI-enhanced responses through integration with Ollama and OpenAI-compatible endpoints.
 
 ## Features
 
-- **Obsidian Compatibility**: Works with existing Obsidian vaults
-- **MkDocs Material Theme**: Beautiful, responsive, and feature-rich documentation
-- **AI Integration**: Connect with Ollama and Open WebUI for AI-enhanced content
-- **RAG Support**: Retrieval-Augmented Generation with Milvus vector database
-- **Docker Support**: Easy deployment with containerization
-- **Poetry**: Python dependency management
-- **GitHub Actions**: Automatic deployment to GitHub Pages
-- **Task-based Workflow**: Simple commands for common operations
+- **RAG Pipeline**: Complete document processing, embedding, and retrieval pipeline
+- **Vector Storage**: Integration with ChromaDB and planned Milvus support
+- **OpenAI-Compatible API**: Drop-in replacement for OpenAI API clients
+- **Ollama Integration**: Local LLM support for both generation and embeddings
+- **Document Monitoring**: Real-time updates when documents change
+- **Docker Support**: Containerized deployment for all components
+- **Python Src Layout**: Modern Python project structure with clean separation of concerns
+- **Type Annotations**: Comprehensive type hints throughout the codebase
 
 ## Getting Started
 
@@ -38,47 +38,41 @@ poetry install
 
 ### Usage
 
-#### Task Commands
+#### CLI Commands
 
-Obelisk includes several task commands to simplify common operations:
+Obelisk provides a CLI for interacting with the RAG system:
 
 ```bash
-# Install dependencies
-task install
+# Show version
+poetry run obelisk --version
 
-# Start the development server
-task run
+# Show help
+poetry run obelisk --help
 
-# Build the static site
-task build
+# Index documents in the vault
+poetry run obelisk rag index --vault /path/to/vault
 
-# Test the build with strict mode
-task test
+# Query the RAG system
+poetry run obelisk rag query "What is RAG?"
 
-# Create a new page
-task new -- page-name
+# Show system statistics
+poetry run obelisk rag stats
 
-# Update dependencies
-task update
-
-# Deploy to GitHub Pages
-task gh-pages
+# Start the RAG API server with OpenAI-compatible endpoint
+poetry run obelisk rag serve --host 0.0.0.0 --port 8000 --watch
 ```
 
 #### Docker Commands
 
 ```bash
-# Build the Docker image
-task docker-build
+# Run the full stack with Docker Compose
+docker compose -f deployments/docker/compose/dev.yaml up
 
-# Run locally with Docker
-task docker-run
+# Run only the RAG service
+docker compose -f deployments/docker/compose/dev.yaml up obelisk-rag
 
-# Run only the Obelisk service
-task compose-obelisk
-
-# Run the full stack (Obelisk, Ollama, OpenWebUI)
-task compose
+# Run with Ollama integration
+docker compose -f deployments/docker/compose/dev.yaml up ollama obelisk-rag
 ```
 
 ## License
