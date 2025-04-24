@@ -157,19 +157,20 @@ The following documentation improvements have been completed:
   - [x] Move Docker files to deployments directory
   - [x] Remove cleanup plan after implementation
 
-- [ ] Perform legacy file cleanup
-  - [ ] Compare each file in obelisk/ with its src/obelisk/ counterpart
-  - [ ] Ensure no functionality is lost in the transition
-  - [ ] Remove old files only after verification
-  - [ ] Document any special cases or file preservation
+- [x] Perform legacy file cleanup
+  - [x] Compare each file in obelisk/ with its src/obelisk/ counterpart
+  - [x] Ensure no functionality is lost in the transition
+  - [x] Remove old files after verification
+  - [x] Document special cases and implementation changes
+  - [x] Move utility scripts from hack/ to tests/scripts/ with proper organization
 
 - [ ] Create project-wide scripts
   - [x] Add testing environment helpers
   - [ ] Create CI utilities (in progress)
 
-- [ ] Update project README
-  - [ ] Describe new structure
-  - [ ] Update getting started guide with src-layout instructions
+- [x] Update project README
+  - [x] Describe new structure
+  - [x] Update getting started guide with src-layout instructions
 
 - [ ] Final testing
   - [x] Run all unit and integration tests
