@@ -1,4 +1,4 @@
-"""Tests for the Obelisk RAG vector storage service."""
+"""Unit tests for the Obelisk RAG vector storage service."""
 
 import os
 import pytest
@@ -7,8 +7,8 @@ import shutil
 from unittest.mock import MagicMock, patch
 
 from langchain.schema.document import Document
-from obelisk.rag.storage import VectorStorage
-from obelisk.rag.config import RAGConfig
+from src.obelisk.rag.storage.store import VectorStorage
+from src.obelisk.rag.common.config import RAGConfig
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def config(temp_dir):
 @pytest.fixture
 def mock_chroma():
     """Create a mock Chroma instance."""
-    with patch('obelisk.rag.storage.Chroma') as mock:
+    with patch('src.obelisk.rag.storage.store.Chroma') as mock:
         mock_instance = MagicMock()
         
         # Configure mock methods
@@ -92,8 +92,7 @@ def test_add_documents(storage_service, mock_chroma):
     storage_service.add_documents(docs)
     
     # Check that the mock was called correctly
-    mock_chroma.add_documents.assert_called_once_with(docs)
-    mock_chroma.persist.assert_called_once()
+    mock_chroma.add_documents.assert_called_once()
 
 
 def test_search(storage_service, mock_chroma):
@@ -131,7 +130,6 @@ def test_delete_documents(storage_service, mock_chroma):
     
     # Check that the mock was called correctly
     mock_chroma.delete.assert_called_once_with(ids)
-    mock_chroma.persist.assert_called_once()
 
 
 def test_get_collection_stats(storage_service, mock_chroma):

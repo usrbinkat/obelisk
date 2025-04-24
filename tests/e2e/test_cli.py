@@ -1,0 +1,205 @@
+"""
+End-to-end tests for the Obelisk CLI.
+
+These tests verify that the CLI commands work correctly
+with the new src-layout pattern.
+"""
+
+import pytest
+import subprocess
+import tempfile
+import os
+import shutil
+import sys
+from unittest.mock import patch
+from pathlib import Path
+
+import src.obelisk
+
+
+@pytest.fixture
+def test_env():
+    """Create a temporary environment with test files."""
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
+    
+    # Create a temporary vault directory
+    vault_dir = os.path.join(temp_dir, "vault")
+    os.makedirs(vault_dir, exist_ok=True)
+    
+    # Create a sample document
+    with open(os.path.join(vault_dir, "test.md"), "w") as f:
+        f.write("""---
+title: Test Document
+date: 2025-04-24
+---
+
+# Test Document
+
+This is a test document for the CLI.
+
+## Section 1
+
+Content for testing the src-layout CLI.
+
+## Section 2
+
+More content for testing.
+""")
+    
+    # Create a vector database directory
+    vector_db_dir = os.path.join(temp_dir, "vectordb")
+    os.makedirs(vector_db_dir, exist_ok=True)
+    
+    # Create an output directory
+    output_dir = os.path.join(temp_dir, "output")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Return the paths
+    yield {
+        "temp_dir": temp_dir,
+        "vault_dir": vault_dir,
+        "vector_db_dir": vector_db_dir,
+        "output_dir": output_dir
+    }
+    
+    # Clean up
+    shutil.rmtree(temp_dir)
+
+
+@pytest.mark.skipif(
+    os.environ.get("SKIP_CLI_TESTS") == "1", 
+    reason="CLI tests disabled"
+)
+def test_cli_version():
+    """Test the CLI version command with src-layout."""
+    # Run the CLI version command
+    result = subprocess.run(
+        ["python", "-m", "src.obelisk", "--version"],
+        capture_output=True,
+        text=True
+    )
+    
+    # Verify output contains version information
+    assert result.returncode == 0
+    assert "version" in result.stdout.lower()
+    assert src.obelisk.__version__ in result.stdout
+
+
+@pytest.mark.skipif(
+    os.environ.get("SKIP_CLI_TESTS") == "1", 
+    reason="CLI tests disabled"
+)
+def test_cli_help():
+    """Test the CLI help command with src-layout."""
+    # Run the CLI help command
+    result = subprocess.run(
+        ["python", "-m", "src.obelisk", "--help"],
+        capture_output=True,
+        text=True
+    )
+    
+    # Verify output contains help information
+    assert result.returncode == 0
+    assert "usage:" in result.stdout.lower()
+    assert "commands:" in result.stdout.lower()
+
+
+@pytest.mark.skipif(
+    os.environ.get("SKIP_CLI_TESTS") == "1" or os.environ.get("SKIP_OLLAMA_TESTS") == "1", 
+    reason="CLI tests or Ollama tests disabled"
+)
+def test_cli_rag_process(test_env):
+    """Test the CLI RAG process command."""
+    # Skip with a message if not running in environment with Ollama
+    if os.environ.get("TEST_OLLAMA_URL") is None:
+        pytest.skip("Skipping test that requires Ollama")
+    
+    with patch("src.obelisk.rag.service.coordinator.ChatOllama"):
+        with patch("src.obelisk.rag.embedding.service.OllamaEmbeddings"):
+            # Run the CLI RAG process command with minimal processing
+            process_result = subprocess.run(
+                [
+                    "python", "-m", "src.obelisk", "rag", "process",
+                    "--vault", test_env["vault_dir"],
+                    "--db", test_env["vector_db_dir"]
+                ],
+                capture_output=True,
+                text=True
+            )
+            
+            # Verify process command output
+            assert process_result.returncode == 0
+            assert "processed" in process_result.stdout.lower()
+
+
+@pytest.mark.skipif(
+    os.environ.get("SKIP_CLI_TESTS") == "1" or os.environ.get("SKIP_OLLAMA_TESTS") == "1", 
+    reason="CLI tests or Ollama tests disabled"
+)
+def test_cli_rag_info(test_env):
+    """Test the CLI RAG info command."""
+    # Skip with a message if not running in environment with Ollama
+    if os.environ.get("TEST_OLLAMA_URL") is None:
+        pytest.skip("Skipping test that requires Ollama")
+    
+    with patch("src.obelisk.rag.service.coordinator.ChatOllama"):
+        with patch("src.obelisk.rag.embedding.service.OllamaEmbeddings"):
+            with patch("src.obelisk.rag.storage.store.Chroma"):
+                # Run the CLI RAG info command
+                info_result = subprocess.run(
+                    [
+                        "python", "-m", "src.obelisk", "rag", "info",
+                        "--db", test_env["vector_db_dir"]
+                    ],
+                    capture_output=True,
+                    text=True
+                )
+                
+                # Verify info command output
+                assert info_result.returncode == 0
+
+
+@pytest.mark.skipif(
+    os.environ.get("SKIP_CLI_TESTS") == "1" or os.environ.get("SKIP_OLLAMA_TESTS") == "1", 
+    reason="CLI tests or Ollama tests disabled"
+)
+def test_cli_rag_query(test_env):
+    """Test the CLI RAG query command."""
+    # Skip with a message if not running in environment with Ollama
+    if os.environ.get("TEST_OLLAMA_URL") is None:
+        pytest.skip("Skipping test that requires Ollama")
+    
+    # Setup mocks for the chain of dependencies
+    with patch("src.obelisk.rag.service.coordinator.ChatOllama") as mock_chat:
+        with patch("src.obelisk.rag.embedding.service.OllamaEmbeddings"):
+            with patch("src.obelisk.rag.storage.store.Chroma"):
+                # Configure mock to return a response
+                mock_response = MagicMock()
+                mock_response.content = "This is a test response from the mocked model."
+                mock_chat.return_value.invoke.return_value = mock_response
+                
+                # Process the vault first to setup document store
+                subprocess.run(
+                    [
+                        "python", "-m", "src.obelisk", "rag", "process",
+                        "--vault", test_env["vault_dir"],
+                        "--db", test_env["vector_db_dir"]
+                    ],
+                    capture_output=True,
+                    text=True
+                )
+                
+                # Run the query command
+                query_result = subprocess.run(
+                    [
+                        "python", "-m", "src.obelisk", "rag", "query",
+                        "--db", test_env["vector_db_dir"],
+                        "What is in the test document?"
+                    ],
+                    capture_output=True,
+                    text=True
+                )
+                
+                # Verify query command output
+                assert query_result.returncode == 0

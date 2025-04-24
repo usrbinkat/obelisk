@@ -1,4 +1,4 @@
-"""Tests for the Obelisk RAG service integration."""
+"""Unit tests for the Obelisk RAG service integration."""
 
 import os
 import pytest
@@ -7,8 +7,8 @@ import shutil
 from unittest.mock import MagicMock, patch
 
 from langchain.schema.document import Document
-from obelisk.rag.service import RAGService
-from obelisk.rag.config import RAGConfig
+from src.obelisk.rag.service.coordinator import RAGService
+from src.obelisk.rag.common.config import RAGConfig
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def config(temp_dir):
 @pytest.fixture
 def mock_ollama_chat():
     """Create a mock ChatOllama."""
-    with patch('obelisk.rag.service.ChatOllama') as mock:
+    with patch('src.obelisk.rag.service.coordinator.ChatOllama') as mock:
         mock_instance = MagicMock()
         mock_response = MagicMock()
         mock_response.content = "This is a mock response from the model."
@@ -50,7 +50,7 @@ def mock_ollama_chat():
 @pytest.fixture
 def mock_embedding_service():
     """Create a mock embedding service."""
-    with patch('obelisk.rag.service.EmbeddingService') as mock:
+    with patch('src.obelisk.rag.service.coordinator.EmbeddingService') as mock:
         mock_instance = MagicMock()
         mock_instance.embed_query.return_value = [0.1, 0.2, 0.3]
         
@@ -63,7 +63,7 @@ def mock_embedding_service():
 @pytest.fixture
 def mock_storage_service():
     """Create a mock storage service."""
-    with patch('obelisk.rag.service.VectorStorage') as mock:
+    with patch('src.obelisk.rag.service.coordinator.VectorStorage') as mock:
         mock_instance = MagicMock()
         mock_instance.search_with_embedding.return_value = [
             Document(page_content="Relevant document 1", metadata={"source": "doc1.md"}),
@@ -83,7 +83,7 @@ def mock_storage_service():
 @pytest.fixture
 def mock_document_processor():
     """Create a mock document processor."""
-    with patch('obelisk.rag.service.DocumentProcessor') as mock:
+    with patch('src.obelisk.rag.service.coordinator.DocumentProcessor') as mock:
         mock_instance = MagicMock()
         mock_instance.process_directory.return_value = [
             Document(page_content="Test document", metadata={"source": "test.md"})

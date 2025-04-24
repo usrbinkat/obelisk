@@ -1,12 +1,12 @@
-"""Tests for the Obelisk RAG embedding service."""
+"""Unit tests for the Obelisk RAG embedding service."""
 
 import os
 import pytest
 from unittest.mock import MagicMock, patch
 
 from langchain.schema.document import Document
-from obelisk.rag.embedding import EmbeddingService
-from obelisk.rag.config import RAGConfig
+from src.obelisk.rag.embedding.service import EmbeddingService
+from src.obelisk.rag.common.config import RAGConfig
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def config():
 @pytest.fixture
 def mock_ollama_embeddings():
     """Create a mock OllamaEmbeddings object."""
-    with patch('obelisk.rag.embedding.OllamaEmbeddings') as mock:
+    with patch('src.obelisk.rag.embedding.service.OllamaEmbeddings') as mock:
         mock_instance = MagicMock()
         # Define mock behavior for embed_documents and embed_query
         mock_instance.embed_documents.return_value = [

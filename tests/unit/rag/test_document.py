@@ -1,21 +1,61 @@
-"""Tests for the Obelisk RAG document processor."""
+"""Unit tests for the Obelisk RAG document processor."""
 
 import os
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
-from obelisk.rag.document import DocumentProcessor
-from obelisk.rag.config import RAGConfig
+from src.obelisk.rag.document.processor import DocumentProcessor
+from src.obelisk.rag.common.config import RAGConfig
 
 
 # Path to the test data directory
-TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "test_data")
+TEST_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data")
 SAMPLE_MD_PATH = os.path.join(TEST_DATA_DIR, "sample.md")
 
 
+@pytest.fixture(scope="function")
+def setup_test_data():
+    """Create test data directory and sample file if it doesn't exist."""
+    os.makedirs(TEST_DATA_DIR, exist_ok=True)
+    
+    # Create a sample markdown file for testing if it doesn't exist
+    if not os.path.exists(SAMPLE_MD_PATH):
+        with open(SAMPLE_MD_PATH, "w") as f:
+            f.write("""---
+title: Sample Document
+date: 2025-04-11
+tags: test, sample
+---
+
+# Sample Document
+
+This is a sample markdown document for testing the document processor.
+
+## Section 1
+
+This is the content of section 1.
+
+### Subsection 1.1
+
+This is a subsection of section 1.
+
+## Section 2
+
+This is the content of section 2.
+
+### Subsection 2.1
+
+This is a subsection of section 2.
+
+### Subsection 2.2
+
+This is another subsection of section 2.
+""")
+
+
 @pytest.fixture
-def config():
+def config(setup_test_data):
     """Create a test configuration."""
     return RAGConfig({
         "vault_dir": TEST_DATA_DIR,
