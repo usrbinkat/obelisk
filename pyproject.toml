@@ -2,43 +2,21 @@
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "obelisk"
 version = "0.1.0"
-description = "Obsidian vault to MkDocs Material Theme site generator"
-authors = [
-    {name = "Obelisk Team"}
-]
+description = "RAG system with vector storage and AI integration"
+authors = ["Obelisk Team"]
 readme = "README.md"
-requires-python = "^3.12"
 license = "MIT"
-dependencies = [
-    "mkdocs>=1.6.0,<2.0.0",
-    "mkdocs-material>=9.6.11,<10.0.0",
-    "mkdocs-material-extensions>=1.3.1,<2.0.0",
-    "mkdocs-git-revision-date-localized-plugin>=1.4.5,<2.0.0",
-    "mkdocs-awesome-pages-plugin>=2.10.1,<3.0.0",
-    "mkdocs-minify-plugin>=0.8.0,<0.9.0",
-    "mkdocs-glightbox>=0.4.0,<0.5.0",
-    "mike>=1.1.2,<2.0.0",
-    "pymdown-extensions>=10.5,<11.0.0",
-    "pillow>=10.2.0,<11.0.0",
-    "pyyaml>=6.0.1,<7.0.0",
-    "langchain>=0.1.0",
-    "langchain-community>=0.1.0",
-    "langchain-ollama>=0.0.1",
-    "chromadb>=0.4.24",
-    "watchdog>=3.0.0",
-    "fastapi>=0.110.0",
-    "uvicorn>=0.28.0",
-    "pydantic>=2.5.0",
-    "langchain-chroma (>=0.2.2,<0.3.0)",
-    "grpcio (>=1.71.0,<2.0.0)"
-]
+packages = [{include = "obelisk", from = "src"}]
 
-[project.scripts]
-obelisk = "obelisk.cli:main"
-obelisk-rag = "obelisk.rag.cli:main"
+[tool.poetry.scripts]
+obelisk = "src.obelisk.cli.commands:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["obelisk"]
 
 [tool.black]
 line-length = 88
@@ -49,8 +27,81 @@ line-length = 88
 target-version = "py312"
 select = ["E", "F", "I", "W"]
 ignore = []
+
+[tool.pytest.ini_options]
+# Temporarily ignore dependency warnings until we replace ChromaDB with Milvus
+filterwarnings = [
+    "ignore::DeprecationWarning:google.protobuf.*:",
+    "ignore::UserWarning:chromadb.*:",
+    "ignore::DeprecationWarning:chromadb.*:",
+]
+
+# Core dependencies for the project
+[tool.poetry.dependencies]
+python = "^3.12"
+pyyaml = ">=6.0.1,<7.0.0"
+
+# RAG-specific dependencies
+[tool.poetry.group.rag]
+optional = true
+
+[tool.poetry.group.rag.dependencies]
+# LangChain components for RAG pipeline
+langchain = ">=0.3.24"
+langchain-community = ">=0.3.22"
+langchain-ollama = ">=0.3.2"
+langchain-chroma = ">=0.2.3,<0.3.0"
+
+# Vector DB and embeddings
+chromadb = ">=0.4.0,<0.7.0"
+grpcio = ">=1.71.0,<2.0.0"  # Required for gRPC communication with vector DB
+
+# API and serving
+fastapi = ">=0.115.0"
+uvicorn = ">=0.34.0"
+pydantic = ">=2.5.0"
+httpx = ">=0.28.0"  # HTTP client for API requests
+
+# File watching
+watchdog = ">=6.0.0"
+
+# Documentation dependencies
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = ">=1.6.0,<2.0.0"
+mkdocs-material = ">=9.6.11,<10.0.0"
+mkdocs-material-extensions = ">=1.3.1,<2.0.0"
+mkdocs-git-revision-date-localized-plugin = ">=1.4.5,<2.0.0"
+mkdocs-awesome-pages-plugin = ">=2.10.1,<3.0.0"
+mkdocs-minify-plugin = ">=0.8.0,<0.9.0"
+mkdocs-glightbox = ">=0.4.0,<0.5.0"
+mike = ">=2.1.3,<3.0.0"
+pymdown-extensions = ">=10.5,<11.0.0"
+pillow = ">=11.2.0,<12.0.0"
+
+# Development dependencies
+[tool.poetry.group.dev]
+optional = true
+
 [tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+ruff = "^0.11.0"
+pre-commit = "^4.2.0"
+pytest-cov = "^6.1.0"
+h11 = ">=0.13.0,<0.15.0"
+packaging = ">=23.2,<25.0.0"
+protobuf = ">=3.20.0,<4.0.0"
+pyee = ">=12.0.0,<13.0.0"
+
+# Testing dependencies
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
 pytest = "^8.3.5"
-playwright = "^1.51.0"
+pytest-mock = "^3.12.0"
 requests = "^2.32.3"
+playwright = "^1.51.0"
 
