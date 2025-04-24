@@ -245,6 +245,197 @@ To ensure we don't break functionality during the restructuring:
   3. Update GitHub issue #37 with completion status and implementation details
   4. Add relevant checkmarks to PR #36 once verification is complete
 
+## Docker Integration Verification Plan
+
+The final verification step is to ensure all Docker components work correctly with the restructured codebase. This section outlines the comprehensive testing approach.
+
+### 1. Container Build Verification
+
+```bash
+# Clean environment before building
+task clean-all
+
+# Build all containers with new structure
+docker compose -f deployments/docker/compose/dev.yaml build
+
+# Verify image creation
+docker images | grep obelisk
+```
+
+Verify all required images are built successfully:
+- obelisk-core
+- obelisk-rag
+- obelisk-init
+- litellm
+
+### 2. Basic Service Startup
+
+```bash
+# Start core services only
+docker compose -f deployments/docker/compose/dev.yaml up -d ollama litellm obelisk-rag
+
+# Check service health
+docker compose -f deployments/docker/compose/dev.yaml ps
+docker compose -f deployments/docker/compose/dev.yaml logs obelisk-rag
+```
+
+Verify:
+- All services start without errors
+- No import errors in logs
+- Services reach ready state
+
+### 3. Initialization Sequence Testing
+
+```bash
+# Test init container functionality
+task docker-test-init
+
+# Verify Ollama model downloads
+docker compose -f deployments/docker/compose/dev.yaml exec ollama ollama list
+```
+
+Run initialization test script:
+```bash
+./tests/scripts/docker/test_init.py
+```
+
+Verify:
+- Init container completes successfully
+- Required models are downloaded
+- Services properly configured
+
+### 4. RAG Functionality Testing
+
+Execute RAG system tests against running containers:
+
+```bash
+# Test RAG functionality with containers
+./tests/scripts/integration/test_rag.py --docker
+
+# Test specific RAG components
+./tests/scripts/integration/test_rag_e2e.py --container
+```
+
+Use task runner for standard tests:
+```bash
+task test-rag-container
+```
+
+Verify:
+- Document indexing works
+- Vector storage connectivity functions
+- Query responses return expected results
+
+### 5. API Integration Testing
+
+Test the OpenAI-compatible API endpoints:
+
+```bash
+# Test OpenAI API integration
+./tests/scripts/integration/test_openai_integration.sh
+
+# Verify endpoint functionality
+curl -X POST http://localhost:8001/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ollama/llama3",
+    "messages": [
+      {"role": "user", "content": "Hello, how are you?"}
+    ]
+  }'
+```
+
+Verify:
+- API endpoints respond correctly
+- Request/response format matches OpenAI spec
+- Error handling works properly
+
+### 6. End-to-End System Testing
+
+Perform complete system tests:
+
+```bash
+# Start all services
+docker compose -f deployments/docker/compose/dev.yaml up -d
+
+# Run e2e test suite
+./tests/scripts/integration/test_e2e_openai.py
+```
+
+Use the comprehensive e2e test task:
+```bash
+task test-e2e-full
+```
+
+Verify:
+- Complete workflow from document to query response
+- Integration between all services
+- System handles errors gracefully
+
+### 7. Performance Validation
+
+Check system performance metrics:
+
+```bash
+# Monitor resource usage
+docker stats --no-stream
+
+# Test with multiple concurrent requests
+./tests/scripts/integration/test_rag_concurrency.py --threads 10
+```
+
+Verify:
+- Memory usage within expected ranges
+- Response times acceptable
+- System stable under load
+
+### 8. Container Version Verification
+
+Ensure all containers are using the proper versions:
+
+```bash
+# Check container versions
+./tests/scripts/docker/check_container_versions.sh
+```
+
+Verify:
+- All components using expected versions
+- No version mismatches between services
+
+### 9. Vector Database Integration
+
+Test specific vector database connections:
+
+```bash
+# Test ChromaDB integration
+task test-rag-chroma
+
+# Test Milvus integration (if available)
+./tests/scripts/integration/test_rag_milvus.py --docker
+```
+
+Verify:
+- Vector database connections successful
+- Storage and retrieval operations function correctly
+- Migrations and schema handling work properly
+
+### 10. Cleanup and Documentation
+
+After successful verification:
+
+```bash
+# Stop all containers
+docker compose -f deployments/docker/compose/dev.yaml down
+
+# Clean testing artifacts
+task clean-all
+```
+
+Document any issues or workarounds in:
+- GitHub PR comments
+- Updated deployment documentation
+- Release notes for future reference
+
 ## Future Architecture Support
 
 This restructuring lays critical groundwork for:
