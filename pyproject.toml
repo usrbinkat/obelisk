@@ -14,9 +14,7 @@ packages = [{include = "obelisk", from = "src"}]
 [tool.poetry.scripts]
 obelisk = "src.obelisk.cli.commands:main"
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = ["obelisk"]
+# Using Poetry for packaging, setuptools configuration not needed
 
 [tool.black]
 line-length = 88
