@@ -11,7 +11,7 @@ import tempfile
 import os
 import shutil
 import sys
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 import src.obelisk
@@ -82,8 +82,9 @@ def test_cli_version():
     
     # Verify output contains version information
     assert result.returncode == 0
-    assert "version" in result.stdout.lower()
+    # Output format is "Obelisk 0.1.0" - no need to check for the word "version"
     assert src.obelisk.__version__ in result.stdout
+    assert f"Obelisk {src.obelisk.__version__}" in result.stdout
 
 
 @pytest.mark.skipif(
@@ -102,43 +103,44 @@ def test_cli_help():
     # Verify output contains help information
     assert result.returncode == 0
     assert "usage:" in result.stdout.lower()
-    assert "commands:" in result.stdout.lower()
+    assert "positional arguments:" in result.stdout.lower()
+    assert "options:" in result.stdout.lower()
+    assert "rag" in result.stdout.lower()
 
 
 @pytest.mark.skipif(
     os.environ.get("SKIP_CLI_TESTS") == "1" or os.environ.get("SKIP_OLLAMA_TESTS") == "1", 
     reason="CLI tests or Ollama tests disabled"
 )
-def test_cli_rag_process(test_env):
-    """Test the CLI RAG process command."""
+def test_cli_rag_index(test_env):
+    """Test the CLI RAG index command."""
     # Skip with a message if not running in environment with Ollama
     if os.environ.get("TEST_OLLAMA_URL") is None:
         pytest.skip("Skipping test that requires Ollama")
     
     with patch("src.obelisk.rag.service.coordinator.ChatOllama"):
         with patch("src.obelisk.rag.embedding.service.OllamaEmbeddings"):
-            # Run the CLI RAG process command with minimal processing
+            # Run the CLI RAG index command with minimal processing
             process_result = subprocess.run(
                 [
-                    "python", "-m", "src.obelisk", "rag", "process",
-                    "--vault", test_env["vault_dir"],
-                    "--db", test_env["vector_db_dir"]
+                    "python", "-m", "src.obelisk", "rag", "index",
+                    "--vault", test_env["vault_dir"]
                 ],
                 capture_output=True,
                 text=True
             )
             
-            # Verify process command output
+            # Verify index command output
             assert process_result.returncode == 0
-            assert "processed" in process_result.stdout.lower()
+            assert "index" in process_result.stdout.lower()
 
 
 @pytest.mark.skipif(
     os.environ.get("SKIP_CLI_TESTS") == "1" or os.environ.get("SKIP_OLLAMA_TESTS") == "1", 
     reason="CLI tests or Ollama tests disabled"
 )
-def test_cli_rag_info(test_env):
-    """Test the CLI RAG info command."""
+def test_cli_rag_stats(test_env):
+    """Test the CLI RAG stats command."""
     # Skip with a message if not running in environment with Ollama
     if os.environ.get("TEST_OLLAMA_URL") is None:
         pytest.skip("Skipping test that requires Ollama")
@@ -146,18 +148,18 @@ def test_cli_rag_info(test_env):
     with patch("src.obelisk.rag.service.coordinator.ChatOllama"):
         with patch("src.obelisk.rag.embedding.service.OllamaEmbeddings"):
             with patch("src.obelisk.rag.storage.store.Chroma"):
-                # Run the CLI RAG info command
-                info_result = subprocess.run(
+                # Run the CLI RAG stats command
+                stats_result = subprocess.run(
                     [
-                        "python", "-m", "src.obelisk", "rag", "info",
-                        "--db", test_env["vector_db_dir"]
+                        "python", "-m", "src.obelisk", "rag", "stats"
                     ],
                     capture_output=True,
                     text=True
                 )
                 
-                # Verify info command output
-                assert info_result.returncode == 0
+                # Verify stats command output
+                assert stats_result.returncode == 0
+                assert "statistics" in stats_result.stdout.lower()
 
 
 @pytest.mark.skipif(
@@ -179,12 +181,11 @@ def test_cli_rag_query(test_env):
                 mock_response.content = "This is a test response from the mocked model."
                 mock_chat.return_value.invoke.return_value = mock_response
                 
-                # Process the vault first to setup document store
+                # Index the vault first to setup document store
                 subprocess.run(
                     [
-                        "python", "-m", "src.obelisk", "rag", "process",
-                        "--vault", test_env["vault_dir"],
-                        "--db", test_env["vector_db_dir"]
+                        "python", "-m", "src.obelisk", "rag", "index",
+                        "--vault", test_env["vault_dir"]
                     ],
                     capture_output=True,
                     text=True
@@ -194,7 +195,6 @@ def test_cli_rag_query(test_env):
                 query_result = subprocess.run(
                     [
                         "python", "-m", "src.obelisk", "rag", "query",
-                        "--db", test_env["vector_db_dir"],
                         "What is in the test document?"
                     ],
                     capture_output=True,
