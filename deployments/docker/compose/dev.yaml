@@ -1,0 +1,369 @@
+# This is a direct copy of the original docker-compose.yaml, just moved to the new location
+# After confirming this works, we can begin to modularize it
+
+services:
+  # Milvus ecosystem services
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.21
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  milvus:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.5.10
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # LiteLLM Proxy - Middleware for multiple LLM providers
+  litellm:
+    container_name: litellm
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000" # LiteLLM proxy API
+    environment:
+      # Authentication keys
+      - LITELLM_MASTER_KEY=${LITELLM_API_TOKEN:-sk-1234} # Master key for admin access
+      - LITELLM_ADMIN_PASSWORD=${LITELLM_ADMIN_PASSWORD:-admin} # Admin password for web UI
+      - DATABASE_URL=postgresql://postgres:postgres@litellm_db:5432/postgres
+
+      # Base Ollama config - this bootstraps the system with minimal model config
+      - MODEL_NAME_1=llama3
+      - MODEL_1=ollama/llama3
+      - MODEL_API_BASE_1=http://ollama:11434
+
+      # Base embedding model config
+      - MODEL_NAME_2=mxbai-embed-large
+      - MODEL_2=ollama/mxbai-embed-large
+      - MODEL_API_BASE_2=http://ollama:11434
+
+      # LiteLLM config and API base URLs
+      - OLLAMA_API_BASE=http://ollama:11434
+      - OBELISK_RAG_API_BASE=http://obelisk-rag:8000
+      - STORE_MODEL_IN_DB=true
+
+      # OpenAI Integration - pass the API key directly to enable automatic validation
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - USE_OPENAI=${USE_OPENAI:-false}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
+      - OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
+
+      # Key dynamic registration options
+      - LITELLM_MODEL_CONFIG=/app/config/litellm_config.yaml
+      - LITELLM_TOKEN_UID=obelisk-api-token
+    volumes:
+      - tokens:/app/tokens:ro # Read-only access to token volume
+      - config:/app/config:rw # Read-write access to config volume (needed for dynamic registration)
+    command: ["--port", "4000"] # Remove config flag to use environment vars for bootstrap
+    networks:
+      - ollama-net
+    depends_on:
+      - litellm_db
+      - ollama
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # PostgreSQL Database for LiteLLM
+  litellm_db:
+    image: postgres:17.4
+    container_name: litellm_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${LITELLM_POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${LITELLM_POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PORT=${LITELLM_POSTGRES_PORT:-5432}
+      - POSTGRES_DATABASE=${LITELLM_POSTGRES_DATABASE:-postgres}
+      - POSTGRES_HOST=${LITELLM_POSTGRES_HOST:-litellm_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Tika service for document processing in OpenWebUI
+  tika:
+    image: apache/tika:3.1.0.0-full
+    container_name: tika
+    ports:
+      - "9998:9998"
+    restart: unless-stopped
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Initialization service to handle startup sequence
+  init-service:
+    env_file:
+      - path: /workspaces/obelisk/.env
+        required: false
+
+    container_name: init-service
+    build:
+      context: /workspaces/obelisk
+      dockerfile: deployments/docker/images/init/Dockerfile
+    volumes:
+      - tokens:/app/tokens
+      - config:/app/config
+    networks:
+      - ollama-net
+    environment:
+      - OLLAMA_API_URL=http://ollama:11434
+      - LITELLM_API_URL=http://litellm:4000
+      - LITELLM_MASTER_KEY=${LITELLM_API_TOKEN:-sk-1234}
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      # Add OpenAI variables for init-service
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - USE_OPENAI=${USE_OPENAI:-false}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
+      - OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
+    depends_on:
+      - etcd
+      - minio
+      - milvus
+      - ollama
+      - litellm
+    restart: "no"
+
+  # OpenWebUI - Front-end interface
+  open-webui:
+    container_name: open-webui
+    image: ghcr.io/open-webui/open-webui:0.6.5
+    environment:
+      # ENV=dev enables swagger documentation
+      - ENV=dev
+      - DEFAULT_LOCALE="America/Los_Angeles"
+      - LOG_LEVEL=debug
+      - MODEL_DOWNLOAD_DIR=/models
+      # Connect to both Ollama directly and LiteLLM proxy
+      - OLLAMA_API_BASE_URL=http://ollama:11434
+      - OLLAMA_API_URL=http://ollama:11434
+      # LiteLLM proxy access
+      - OPENAI_API_BASE_URL=http://litellm:4000
+      - OPENAI_API_KEY=${LITELLM_API_TOKEN:-sk-1234}
+      # Model availability configuration
+      - OLLAMA_MODELS=llama3,mxbai-embed-large
+      # OpenAI integration (enabled explicitly for all cases)
+      - OPENAI_MODELS=gpt-4o,text-embedding-3-large
+      - OPENAI_USE_KEY=true
+      - OPENAI_KEY=${LITELLM_API_TOKEN:-sk-1234}
+      # Original Obelisk RAG direct connection
+      - OBELISK_RAG_API_BASE_URL=http://obelisk-rag:8000
+      # Enable OpenWebUI's built-in RAG features with Tika
+      - RETRIEVAL_ENABLED=true
+      - RETRIEVAL_VECTOR_STORE=milvus
+      - MILVUS_URI=http://milvus:19530
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - TIKA_SERVER_URL=http://tika:9998
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - WEBUI_URL=http://localhost:8080
+    volumes:
+      - data:/data
+      - models:/models
+      - open-webui:/config
+      - config:/app/config
+    ports:
+      - "8080:8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    depends_on:
+      - litellm
+      - tika
+      - ollama
+      - obelisk-rag
+      - milvus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+
+  # Ollama service for local model hosting
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:0.6.5
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - CUDA_VISIBLE_DEVICES=0
+      - LOG_LEVEL=debug
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+              count: all
+    volumes:
+      - ollama:/root/.ollama
+      - models:/models
+    ports:
+      - "11434:11434"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+
+  # For devcontainer use, we build the obelisk container with the files copied in
+  # rather than mounted, to avoid WSL/devcontainer mounting issues
+  obelisk:
+    container_name: obelisk
+    build:
+      context: /workspaces/obelisk
+      dockerfile: deployments/docker/images/core/Dockerfile
+    # No volume mounts for mkdocs.yml to avoid mount errors in devcontainer
+    ports:
+      - "8000:8000"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    command: ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+
+  # Preserve original Obelisk RAG service
+  obelisk-rag:
+    container_name: obelisk-rag
+    build:
+      context: /workspaces/obelisk
+      dockerfile: deployments/docker/images/rag/Dockerfile
+    volumes:
+      - rag-data:/app/data
+      - rag-vault:/app/vault
+      - tokens:/app/tokens:ro
+      - config:/app/config:ro
+    ports:
+      - "8001:8000"
+    environment:
+      - VAULT_DIR=/app/vault
+      - CHROMA_DIR=/app/data/chroma_db
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=${GENERATION_MODEL:-llama3}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-mxbai-embed-large}
+      - RETRIEVE_TOP_K=5
+      - CHUNK_SIZE=2500
+      - CHUNK_OVERLAP=500
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - WATCH_DOCS=true
+      # Milvus integration
+      - VECTOR_DB=milvus
+      - MILVUS_URI=http://milvus:19530
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      # LiteLLM integration
+      - LITELLM_API_URL=http://litellm:4000
+      - LITELLM_API_KEY=${LITELLM_API_TOKEN:-sk-1234}
+      # OpenAI Integration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - USE_OPENAI=${USE_OPENAI:-false}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
+      - OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-ollama}
+      - COMPLETION_PROVIDER=${COMPLETION_PROVIDER:-ollama}
+    depends_on:
+      - ollama
+      - milvus
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  data:
+  models:
+  ollama:
+  open-webui:
+  rag-data:
+  rag-vault:
+  postgres_data:
+  tokens:
+  config:
+  milvus_data:
+  etcd_data:
+  minio_data:
+
+networks:
+  ollama-net:
+    driver: bridge

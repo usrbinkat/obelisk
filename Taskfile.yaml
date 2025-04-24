@@ -86,8 +86,8 @@ tasks:
       - docker images | grep -E '^obelisk-' | awk '{print $1":"$2}' | xargs docker rmi -f 2>/dev/null || true
       - echo "Clean-all-purge completed."
 
-  docker-build:
-    desc: Build the Docker container
+  docker-build-legacy:
+    desc: Build legacy Docker container
     cmds:
       - docker build -t obelisk:latest .
 
@@ -125,3 +125,50 @@ tasks:
     desc: Prepare environment for OpenAI integration testing (runs long-duration commands)
     cmds:
       - ./hack/test_prep_openai.sh
+      
+  docker:
+    desc: Run Docker stack from reorganized structure (detached)
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d {{.CLI_ARGS}}
+      
+  docker-build:
+    desc: Build and run Docker stack from reorganized structure (detached)
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d --build {{.CLI_ARGS}}
+      
+  docker-config:
+    desc: Validate Docker compose configuration
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml config
+      
+  docker-test:
+    desc: Run initialization tests against Docker stack
+    cmds:
+      - |
+        LITELLM_TOKEN=$(docker compose -f deployments/docker/compose/dev.yaml exec -T litellm grep LITELLM_API_TOKEN /app/tokens/api_tokens.env | cut -d= -f2 | tr -d ' \t\n\r')
+        LITELLM_API_TOKEN="$LITELLM_TOKEN" poetry run python hack/test_init.py --compose-file deployments/docker/compose/dev.yaml
+        
+  docker-stop:
+    desc: Stop Docker services from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml stop
+      
+  docker-down:
+    desc: Stop and remove Docker services from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml down {{.CLI_ARGS}}
+      
+  docker-clean:
+    desc: Stop and remove Docker services, volumes, and networks from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml down -v --remove-orphans
+      
+  docker-logs:
+    desc: "View logs from Docker services (usage: task docker-logs -- [service])"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml logs -f {{.CLI_ARGS}}
+      
+  docker-ps:
+    desc: List running Docker containers from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml ps

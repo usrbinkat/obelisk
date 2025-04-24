@@ -12,6 +12,7 @@ import time
 import json
 import logging
 import requests
+import argparse
 from typing import Dict, List, Any, Optional
 
 # Configure logging
@@ -32,7 +33,7 @@ OPENWEBUI_API = os.environ.get("OPENWEBUI_API_URL", "http://localhost:8080")
 # OpenWebUI token (may be different from LiteLLM token)
 OPENWEBUI_TOKEN = os.environ.get("OPENWEBUI_TOKEN", "")
 
-def load_openwebui_token() -> Optional[str]:
+def load_openwebui_token(compose_file=None) -> Optional[str]:
     """Load the OpenWebUI token from the environment or via docker-compose exec."""
     # Check if it's already in the environment
     token = os.environ.get("OPENWEBUI_TOKEN")
@@ -43,11 +44,28 @@ def load_openwebui_token() -> Optional[str]:
     # Try to retrieve from container using subprocess
     try:
         import subprocess
+        cmd = ["docker", "compose"]
+        
+        # Add compose file if specified
+        if compose_file:
+            cmd.extend(["-f", compose_file])
+            
+        cmd.extend(["exec", "-T", "litellm", "grep", "OPENWEBUI_AUTH_TOKEN", "/app/tokens/api_tokens.env"])
+        
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "litellm", "grep", "OPENWEBUI_AUTH_TOKEN", "/app/tokens/api_tokens.env"],
+            cmd,
             capture_output=True,
             text=True
         )
+        
+        # Fall back to docker-compose v1 if v2 fails and no compose_file was specified
+        if result.returncode != 0 and not compose_file:
+            result = subprocess.run(
+                ["docker-compose", "exec", "-T", "litellm", "grep", "OPENWEBUI_AUTH_TOKEN", "/app/tokens/api_tokens.env"],
+                capture_output=True,
+                text=True
+            )
+        
         if result.returncode == 0:
             token_line = result.stdout.strip()
             token = token_line.split("=")[1]
@@ -78,8 +96,12 @@ def check_service_health(url: str, service_name: str) -> bool:
         
         # For LiteLLM, use models endpoint with auth
         if "litellm" in service_name.lower():
+            # Get compose_file from parse_arguments if available
+            args = parse_arguments() if 'args' not in locals() else args
+            compose_file = getattr(args, 'compose_file', None) if 'args' in locals() else None
+            
             # Retrieve token for LiteLLM
-            token = load_token_from_file()
+            token = load_token_from_file(compose_file)
             if token:
                 try:
                     response = requests.get(
@@ -293,9 +315,15 @@ def check_rag_functionality(api_key: str) -> bool:
         return False
 
 
-def load_token_from_file() -> Optional[str]:
+def load_token_from_file(compose_file=None) -> Optional[str]:
     """Load the LiteLLM token from the token file or via docker-compose exec."""
-    # First try loading from file if available
+    # Check if it's already in the environment
+    token = os.environ.get("LITELLM_API_TOKEN")
+    if token:
+        logger.info("LiteLLM token loaded from environment")
+        return token
+    
+    # Try loading from file if available
     try:
         with open(TOKEN_FILE, "r") as f:
             for line in f:
@@ -309,11 +337,28 @@ def load_token_from_file() -> Optional[str]:
     # If file not found, try to retrieve from container using subprocess
     try:
         import subprocess
+        cmd = ["docker", "compose"]
+        
+        # Add compose file if specified
+        if compose_file:
+            cmd.extend(["-f", compose_file])
+            
+        cmd.extend(["exec", "-T", "litellm", "grep", "LITELLM_API_TOKEN", "/app/tokens/api_tokens.env"])
+        
         result = subprocess.run(
-            ["docker-compose", "exec", "-T", "litellm", "grep", "LITELLM_API_TOKEN", "/app/tokens/api_tokens.env"],
+            cmd,
             capture_output=True,
             text=True
         )
+        
+        # Fall back to docker-compose v1 if v2 fails and no compose_file was specified
+        if result.returncode != 0 and not compose_file:
+            result = subprocess.run(
+                ["docker-compose", "exec", "-T", "litellm", "grep", "LITELLM_API_TOKEN", "/app/tokens/api_tokens.env"],
+                capture_output=True,
+                text=True
+            )
+        
         if result.returncode == 0:
             token_line = result.stdout.strip()
             token = token_line.split("=")[1]
@@ -326,9 +371,24 @@ def load_token_from_file() -> Optional[str]:
     return None
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Validate container initialization")
+    parser.add_argument(
+        "--compose-file", "-f", 
+        help="Path to the Docker Compose file to use for token retrieval"
+    )
+    return parser.parse_args()
+
 def main():
     """Main validation function."""
+    # Parse command line arguments
+    args = parse_arguments()
+    compose_file = args.compose_file
+    
     logger.info("Starting initialization validation")
+    if compose_file:
+        logger.info(f"Using Docker Compose file: {compose_file}")
     
     # Wait a moment for services to stabilize
     time.sleep(5)
@@ -350,7 +410,7 @@ def main():
         return 1
     
     # Load token from file or use default
-    api_key = load_token_from_file() or os.environ.get("LITELLM_API_TOKEN", "sk-1234")
+    api_key = load_token_from_file(compose_file) or os.environ.get("LITELLM_API_TOKEN", "sk-1234")
     
     # Check LiteLLM authentication
     auth_ok = check_litellm_authentication(api_key)
@@ -365,7 +425,7 @@ def main():
         return 1
     
     # Get OpenWebUI token and check generation
-    openwebui_token = load_openwebui_token()
+    openwebui_token = load_openwebui_token(compose_file)
     global OPENWEBUI_TOKEN
     OPENWEBUI_TOKEN = openwebui_token
     
