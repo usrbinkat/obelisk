@@ -57,3 +57,5 @@ cookies.txt
 .obelisk/
 .chroma/
 .test_artifacts/
+.test_chroma/
+.pytest_cache/
