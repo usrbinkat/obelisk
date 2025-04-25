@@ -181,6 +181,7 @@ def handle_config(args):
 
 def handle_serve(args):
     """Handle the serve command."""
+    print("DEBUG: Starting handle_serve function")
     try:
         # Check if FastAPI and other dependencies are available
         if 'FastAPI' not in globals():
@@ -246,4 +247,31 @@ def handle_serve(args):
     print(f"  POST http://{host}:{port}/v1/chat/completions")
     print("\nPress Ctrl+C to stop")
     
-    uvicorn.run(app, host=host, port=port)
+    print(f"DEBUG: About to start uvicorn server on {host}:{port}")
+    try:
+        # Configure logging
+        log_config = uvicorn.config.LOGGING_CONFIG
+        log_config["loggers"]["uvicorn"]["level"] = "DEBUG"
+        log_config["loggers"]["uvicorn.error"]["level"] = "DEBUG"
+        log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        
+        # Print all available routes for debugging
+        print("DEBUG: API routes configured:")
+        for route in app.routes:
+            print(f"  {route.path} [{','.join(route.methods) if hasattr(route, 'methods') else 'N/A'}]")
+        
+        # Start uvicorn with explicit logging
+        print(f"DEBUG: Starting uvicorn on {host}:{port} with log_level=debug")
+        uvicorn.run(
+            app, 
+            host=host, 
+            port=port, 
+            log_level="debug", 
+            log_config=log_config,
+            access_log=True
+        )
+        print("DEBUG: Server stopped normally")
+    except Exception as e:
+        print(f"DEBUG: Error starting server: {e}")
+        logger.error(f"Error starting server: {str(e)}")
+        logger.error(traceback.format_exc())
