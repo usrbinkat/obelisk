@@ -61,7 +61,15 @@ model_list:
   # Obelisk RAG - custom implementation
   - model_name: obelisk-rag/llama3
     litellm_params:
-      model: openai/gpt-3.5-turbo # Just a placeholder, obelisk-rag has its own model handling
+      model: ollama/llama3 # Using ollama provider format with llama3 model
+      api_base: http://obelisk-rag:8000
+      api_key: dummy-key
+      drop_params: true
+      
+  # Obelisk RAG alias without provider prefix
+  - model_name: obelisk-rag
+    litellm_params:
+      model: ollama/llama3 # Using ollama provider format with llama3 model
       api_base: http://obelisk-rag:8000
       api_key: dummy-key
       drop_params: true
@@ -123,6 +131,7 @@ custom_endpoints:
     url: http://obelisk-rag:8000
     models:
       - obelisk-rag/llama3
+      - obelisk-rag
       - obelisk-rag/embeddings
 
 # LiteLLM specific settings
