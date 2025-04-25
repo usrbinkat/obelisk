@@ -145,6 +145,7 @@
                 "esbenp.prettier-vscode",
                 "eamodio.gitlens",
                 "GitHub.copilot",
+                "bierner.markdown-mermaid",
                 "ms-vscode-remote.remote-containers"
             ],
             "settings": {

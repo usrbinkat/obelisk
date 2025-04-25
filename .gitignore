@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 env/
+.env
 build/
 develop-eggs/
 dist/
@@ -19,7 +20,6 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
-.env
 .venv
 venv/
 ENV/
@@ -56,3 +56,6 @@ cookies.txt
 # RAG system
 .obelisk/
 .chroma/
+.test_artifacts/
+.test_chroma/
+.pytest_cache/

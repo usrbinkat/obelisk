@@ -22,6 +22,13 @@ tasks:
     desc: Build the static site with strict mode to catch errors
     cmds:
       - poetry run mkdocs build --clean --strict
+      
+  test-all:
+    desc: Run all unit and integration tests
+    cmds:
+      - echo "Running all unit and integration tests..."
+      - poetry run pytest -xvs tests/unit/ tests/integration/
+      - echo "All tests completed successfully!"
 
   new:
     desc: Create a new markdown file in vault
@@ -55,11 +62,19 @@ tasks:
       - echo "Basic cleanup completed."
 
   clean-all:
-    desc: Stop all containers but preserve Ollama volume and images for faster testing
+    desc: Stop all containers and clean all cache/test files but preserve Ollama volume and images
     cmds:
       - task: clean
+      - echo "Cleaning project caches and test artifacts..."
+      - rm -rf .pytest_cache
+      - rm -rf .test_artifacts
+      - rm -rf .test_chroma
+      - find . -name ".coverage" -delete
+      - find . -name "*.pyc" -delete
+      - find . -name "*.pyo" -delete
+      - find . -name "*~" -delete
       - echo "Stopping all services..."
-      - docker-compose down
+      - docker compose -f deployments/docker/compose/dev.yaml down 2>/dev/null || true
       - echo "Stopping specific containers..."
       - docker stop init-service litellm litellm_db milvus-standalone milvus-etcd milvus-minio 2>/dev/null || true
       - echo "Removing specific containers..."
@@ -71,23 +86,18 @@ tasks:
       - echo "Clean-all completed. Ollama volumes and container images preserved for faster testing."
 
   clean-all-purge:
-    desc: Clean everything including all containers, images, volumes, and networks
+    desc: Clean everything including all containers, images, volumes, networks, and project artifacts
     cmds:
-      - task: clean
-      - echo "Stopping and removing all containers and volumes with docker-compose..."
-      - docker-compose down -v --remove-orphans
-      - echo "Removing all built images with docker-compose..."
-      - docker-compose rm -fsv
+      - task: clean-all
+      - echo "Also removing Ollama volumes and container images..."
+      - docker volume ls | grep -E 'ollama' | awk '{print $2}' | xargs docker volume rm -f 2>/dev/null || true
+      - docker images | grep -E 'ollama' | awk '{print $1":"$2}' | xargs docker rmi -f 2>/dev/null || true
       - echo "Pruning project networks..."
-      - docker-compose down --rmi all
-      # Handle edge cases
-      - echo "Handling any resources not removed by docker-compose..."
-      - docker volume ls | grep -E '^obelisk_' | awk '{print $2}' | xargs docker volume rm -f 2>/dev/null || true
-      - docker images | grep -E '^obelisk-' | awk '{print $1":"$2}' | xargs docker rmi -f 2>/dev/null || true
+      - docker compose -f deployments/docker/compose/dev.yaml down --rmi all 2>/dev/null || true
       - echo "Clean-all-purge completed."
 
-  docker-build:
-    desc: Build the Docker container
+  docker-build-legacy:
+    desc: Build legacy Docker container
     cmds:
       - docker build -t obelisk:latest .
 
@@ -124,4 +134,67 @@ tasks:
   test-prep-openai:
     desc: Prepare environment for OpenAI integration testing (runs long-duration commands)
     cmds:
-      - ./hack/test_prep_openai.sh
+      - ./tests/scripts/integration/test_prep_openai.sh
+      
+  docker:
+    desc: Run Docker stack from reorganized structure (detached)
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d {{.CLI_ARGS}}
+      
+  docker-build:
+    desc: Build and run Docker stack from reorganized structure (detached)
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d --build {{.CLI_ARGS}}
+      
+  docker-config:
+    desc: Validate Docker compose configuration
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml config
+      
+  docker-test:
+    desc: Run initialization tests against Docker stack
+    cmds:
+      - |
+        LITELLM_TOKEN=$(docker compose -f deployments/docker/compose/dev.yaml exec -T litellm grep LITELLM_API_TOKEN /app/tokens/api_tokens.env | cut -d= -f2 | tr -d ' \t\n\r')
+        LITELLM_API_TOKEN="$LITELLM_TOKEN" poetry run python tests/scripts/docker/test_init.py --compose-file deployments/docker/compose/dev.yaml
+        
+  docker-stop:
+    desc: Stop Docker services from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml stop
+      
+  docker-down:
+    desc: Stop and remove Docker services from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml down {{.CLI_ARGS}}
+      
+  docker-clean:
+    desc: Stop and remove Docker services, volumes, and networks from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml down -v --remove-orphans
+      
+  docker-logs:
+    desc: "View logs from Docker services (usage: task docker-logs -- [service])"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml logs -f {{.CLI_ARGS}}
+      
+  docker-ps:
+    desc: List running Docker containers from reorganized structure
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml ps
+      
+  test-rag:
+    desc: Run RAG system tests (unit and integration)
+    cmds:
+      - echo "Running RAG unit tests..."
+      - poetry run pytest -xvs tests/unit/rag/
+      - echo "Running RAG integration tests..."
+      - poetry run pytest -xvs tests/integration/rag/
+      - echo "All RAG tests completed successfully!"
+      
+  test-rag-e2e:
+    desc: Run RAG end-to-end tests (requires running Milvus)
+    cmds:
+      - echo "Running RAG end-to-end tests..."
+      - poetry run python tests/scripts/integration/test_rag_e2e.py
+      - echo "RAG end-to-end tests completed successfully!"
