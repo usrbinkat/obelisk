@@ -18,8 +18,8 @@ COPY pyproject.toml poetry.lock* ./
 # Configure poetry to not create virtualenv
 RUN poetry config virtualenvs.create false
 
-# Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root
+# Install dependencies including docs for mkdocs
+RUN poetry install --no-interaction --no-ansi --no-root --with=docs
 
 # Copy project files (including vault directory and mkdocs.yml)
 COPY . .
