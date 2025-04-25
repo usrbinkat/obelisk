@@ -214,8 +214,9 @@ services:
       - OPENAI_MODELS=gpt-4o,text-embedding-3-large
       - OPENAI_USE_KEY=true
       - OPENAI_KEY=${LITELLM_API_TOKEN:-sk-1234}
-      # Original Obelisk RAG direct connection
+      # Direct Obelisk RAG connection
       - OBELISK_RAG_API_BASE_URL=http://obelisk-rag:8000
+      - OBELISK_RAG_MODELS=llama3
       # Enable OpenWebUI's built-in RAG features with Tika
       - RETRIEVAL_ENABLED=true
       - RETRIEVAL_VECTOR_STORE=milvus
@@ -293,7 +294,7 @@ services:
     networks:
       - ollama-net
     restart: unless-stopped
-    command: ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+    command: ["poetry", "run", "mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
 
   # Preserve original Obelisk RAG service
   obelisk-rag:
