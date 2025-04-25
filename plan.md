@@ -161,8 +161,8 @@ This restructuring will directly support the architecture described in `/vault/c
 - [x] Prepare for Docker integration
   - [x] Ensure src layout works with Docker builds
   - [x] Update package metadata for Docker usage
-  - [ ] Test container builds with updated structure (pending)
-  - [ ] Verify service functionality (pending)
+  - [x] Test container builds with updated structure
+  - [x] Verify service functionality
 
 ## Implementation Strategy
 
@@ -240,7 +240,7 @@ To ensure we don't break functionality during the restructuring:
   5. ✅ Completed git commits with detailed, technically informative messages
 
 - Next Steps:
-  1. Complete Docker integration verification with refactored code
+  1. ✅ Complete Docker integration verification with refactored code
   2. Merge changes back to main via PR
   3. Update GitHub issue #37 with completion status and implementation details
   4. Add relevant checkmarks to PR #36 once verification is complete
@@ -248,6 +248,37 @@ To ensure we don't break functionality during the restructuring:
 ## Docker Integration Verification Plan
 
 The final verification step is to ensure all Docker components work correctly with the restructured codebase. This section outlines the comprehensive testing approach.
+
+### Docker Integration Verification Results
+
+✅ COMPLETED: We've successfully verified the Docker integration with the restructured codebase:
+
+1. **Container Build Verification**:
+   - Successfully built all containers with the new src-layout structure
+   - Fixed Dockerfile paths to reference `/src/obelisk` instead of `/obelisk`
+   - Verified all images build without errors
+
+2. **Service Functionality**:
+   - Verified the RAG API service starts correctly with the new module paths
+   - Fixed entrypoint.sh script to use proper Python module paths with src.obelisk prefixes
+   - Successfully tested document processing and indexing
+   - Verified API endpoints work correctly and handle queries appropriately
+   - Fixed issues with server binding to ensure proper network access
+
+3. **Issues Identified and Fixed**:
+   - Updated Dockerfile to use COPY src/ /app/src/ instead of COPY obelisk/ /app/obelisk/
+   - Fixed Python module imports with new src.obelisk prefixes
+   - Enhanced entrypoint.sh for better error handling and debugging
+   - Fixed API server binding to 0.0.0.0 to ensure network accessibility
+   - Added more detailed logging to help diagnose startup issues
+
+4. **RAG API Testing**:
+   - Successfully tested the /stats endpoint
+   - Successfully tested the /v1/chat/completions endpoint with RAG functionality
+   - Verified document processing and vector storage works correctly
+   - Confirmed the system returns appropriate sources along with responses
+
+All essential Docker integration components have been verified and work correctly with the restructured codebase. The src-layout pattern is fully compatible with the containerized deployment.
 
 ### 1. Container Build Verification
 
