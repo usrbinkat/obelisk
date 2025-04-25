@@ -133,6 +133,36 @@ function configure_litellm() {
       }'
     echo ""
     
+    # Register Obelisk RAG model
+    curl -s -X POST "${api_base}/model/new" \
+      -H "Authorization: Bearer ${api_token}" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model_name": "obelisk-rag/llama3",
+        "litellm_params": {
+          "model": "ollama/llama3",
+          "api_base": "http://obelisk-rag:8000",
+          "api_key": "dummy-key",
+          "drop_params": true
+        }
+      }'
+    echo ""
+    
+    # Register Obelisk RAG alias without provider prefix
+    curl -s -X POST "${api_base}/model/new" \
+      -H "Authorization: Bearer ${api_token}" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model_name": "obelisk-rag",
+        "litellm_params": {
+          "model": "ollama/llama3",
+          "api_base": "http://obelisk-rag:8000",
+          "api_key": "dummy-key",
+          "drop_params": true
+        }
+      }'
+    echo ""
+    
     # Register OpenAI models if enabled
     if [ "$USE_OPENAI_CONFIG" = true ] && [ -n "${OPENAI_API_KEY}" ]; then
       echo "Registering OpenAI models with LiteLLM API..."
@@ -446,7 +476,7 @@ function configure_openwebui() {
   
   # Default to always including OpenAI models through LiteLLM - we manage
   # this through token permissions at LiteLLM level
-  OPENAI_MODELS="gpt-4o,text-embedding-3-large"
+  OPENAI_MODELS="gpt-4o,text-embedding-3-large,obelisk-rag,obelisk-rag/llama3"
   
   # Create configurations
   echo "Creating OpenWebUI configurations..."
@@ -486,6 +516,12 @@ EOF
       "name": "text-embedding-3-large",
       "type": "embedding",
       "endpoint": "http://litellm:4000"
+    },
+    {
+      "name": "obelisk-rag",
+      "type": "openai",
+      "endpoint": "http://obelisk-rag:8000",
+      "description": "RAG-augmented model with document context"
     }
   ]
 }
@@ -634,11 +670,11 @@ function verify_token_permissions() {
     echo "API token needs specific model permissions, updating..."
     
     # Determine which models to include
-    local model_list="[\"llama3\", \"mxbai-embed-large\"]"
+    local model_list="[\"llama3\", \"mxbai-embed-large\", \"obelisk-rag\", \"obelisk-rag/llama3\"]"
     
     # Add OpenAI models if they should be available
     if [ -n "${OPENAI_API_KEY}" ] || [ "${USE_OPENAI:-false}" = "true" ]; then
-      model_list="[\"llama3\", \"mxbai-embed-large\", \"gpt-4o\", \"text-embedding-3-large\"]"
+      model_list="[\"llama3\", \"mxbai-embed-large\", \"gpt-4o\", \"text-embedding-3-large\", \"obelisk-rag\", \"obelisk-rag/llama3\"]"
       echo "Including OpenAI models in token permissions"
     fi
     
