@@ -2,11 +2,14 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install curl and other dependencies
+# Install curl, debugging tools, and other dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     curl \
     git \
+    procps \
+    net-tools \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Poetry configuration and lock files
@@ -19,10 +22,10 @@ RUN pip install --no-cache-dir poetry
 RUN poetry config virtualenvs.create false
 
 # Install dependencies from lock file
-RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry install --no-interaction --no-ansi --no-root --with=rag
 
 # Copy the RAG implementation files
-COPY obelisk/ /app/obelisk/
+COPY src/ /app/src/
 
 # Create data directory
 RUN mkdir -p /app/data/chroma_db
@@ -32,7 +35,7 @@ RUN mkdir -p /app/vault
 EXPOSE 8000
 
 # Set environment variables
-ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV PYTHONPATH="/app"
 ENV VAULT_DIR="/app/vault"
 ENV CHROMA_DIR="/app/data/chroma_db"
 ENV OLLAMA_URL="http://ollama:11434"
@@ -40,8 +43,9 @@ ENV OLLAMA_MODEL="llama3"
 ENV EMBEDDING_MODEL="mxbai-embed-large"
 ENV API_HOST="0.0.0.0"
 ENV API_PORT="8000"
-ENV LOG_LEVEL="INFO"
+ENV LOG_LEVEL="DEBUG"
 ENV WATCH_DOCS="true"
+ENV PYTHONUNBUFFERED="1"
 
 # Add a health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
