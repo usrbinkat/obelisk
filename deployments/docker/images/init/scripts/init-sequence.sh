@@ -8,18 +8,54 @@ echo "Obelisk Container Initialization"
 echo "================================"
 echo "Starting initialization sequence at $(date)"
 
-sleep 45
+sleep 20
 
 # Script locations
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TOKEN_SCRIPT="${SCRIPT_DIR}/generate-tokens.sh"
 MODELS_SCRIPT="${SCRIPT_DIR}/download-models.sh"
 CONFIG_SCRIPT="${SCRIPT_DIR}/configure-services.sh"
+LITELLM_REGISTRATION_SCRIPT="${SCRIPT_DIR}/register-litellm-models.sh"
 
 # Initialization steps
 function check_dependencies() {
 	echo "Checking service dependencies..."
-	# TODO: Add dependency checks for required services
+	
+	# Check LiteLLM is ready
+	local litellm_retries=0
+	while [ $litellm_retries -lt 10 ]; do
+		if curl -s -f http://litellm:4000/health >/dev/null 2>&1 || curl -s http://litellm:4000/v1/models -H "Authorization: Bearer sk-1234" >/dev/null 2>&1; then
+			echo "✓ LiteLLM is ready"
+			break
+		fi
+		echo "Waiting for LiteLLM... (attempt $((litellm_retries + 1))/10)"
+		sleep 3
+		litellm_retries=$((litellm_retries + 1))
+	done
+	
+	# Check Ollama is ready
+	local ollama_retries=0
+	while [ $ollama_retries -lt 10 ]; do
+		if curl -s -f http://ollama:11434/api/tags >/dev/null 2>&1; then
+			echo "✓ Ollama is ready"
+			break
+		fi
+		echo "Waiting for Ollama... (attempt $((ollama_retries + 1))/10)"
+		sleep 3
+		ollama_retries=$((ollama_retries + 1))
+	done
+	
+	# Check Milvus is ready
+	local milvus_retries=0
+	while [ $milvus_retries -lt 10 ]; do
+		if curl -s -f http://milvus:19530/v1/vector/collections >/dev/null 2>&1; then
+			echo "✓ Milvus is ready"
+			break
+		fi
+		echo "Waiting for Milvus... (attempt $((milvus_retries + 1))/10)"
+		sleep 3
+		milvus_retries=$((milvus_retries + 1))
+	done
 }
 
 function generate_tokens() {
@@ -51,6 +87,18 @@ function configure_services() {
 		echo "Warning: Service configuration script not found"
 	fi
 }
+
+function register_litellm_models() {
+	echo "Registering models with LiteLLM..."
+	# Run the LiteLLM model registration script
+	if [ -f "$LITELLM_REGISTRATION_SCRIPT" ]; then
+		chmod +x "$LITELLM_REGISTRATION_SCRIPT"
+		"$LITELLM_REGISTRATION_SCRIPT"
+	else
+		echo "Warning: LiteLLM model registration script not found"
+	fi
+}
+
 
 function verify_initialization() {
 	echo "Verifying initialization..."
@@ -168,8 +216,21 @@ function final_token_permission_check() {
 	local models_response=$(curl -s -H "Authorization: Bearer $LITELLM_API_TOKEN" "$LITELLM_API_URL/models")
 	echo "Raw models response: $models_response"
 
-	if echo "$models_response" | grep -q "\"id\":\"\\*\"" || ! (echo "$models_response" | grep -q "llama3"); then
-		echo "API token still needs permission update. Running one final update..."
+	# Check if we have OpenAI models when they should be available
+	local needs_update=false
+	if echo "$models_response" | grep -q "\"id\":\"\\*\""; then
+		echo "Token has wildcard permissions, needs update"
+		needs_update=true
+	elif [ -n "${OPENAI_API_KEY}" ] || [ "${USE_OPENAI:-false}" = "true" ]; then
+		# Check if OpenAI models are present when they should be
+		if ! (echo "$models_response" | grep -q "gpt-4o") || ! (echo "$models_response" | grep -q "text-embedding-3-large"); then
+			echo "OpenAI models missing from token permissions, needs update"
+			needs_update=true
+		fi
+	fi
+	
+	if [ "$needs_update" = true ]; then
+		echo "API token needs permission update. Running one final update..."
 
 		# Force a token permission update
 		local model_list="[\"llama3\", \"mxbai-embed-large\"]"
@@ -203,6 +264,7 @@ check_dependencies
 generate_tokens
 configure_models
 configure_services
+register_litellm_models  # Register models with LiteLLM
 verify_initialization
 
 # Final token permission check as the very last step
