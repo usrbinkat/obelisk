@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 # Set specific logging levels for noisy libraries
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("chromadb").setLevel(logging.WARNING)
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("pymilvus").setLevel(logging.WARNING)
 
 
 def main():
