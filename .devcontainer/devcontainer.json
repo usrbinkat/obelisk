@@ -21,17 +21,9 @@
             "DOCKER_BUILDKIT": "0"
         }
     },
-    "securityOpt": [
-        "seccomp=unconfined"
-    ],
-    "runArgs": [
-        "--privileged",
-        "--network=host"
-    ],
-    "forwardPorts": [
-        2222,
-        7681
-    ],
+    "securityOpt": ["seccomp=unconfined"],
+    "runArgs": ["--privileged", "--network=host"],
+    "forwardPorts": [2222, 7681],
     "portsAttributes": {
         "2222": {
             "label": "SSH Access",
@@ -130,7 +122,7 @@
         }
     ],
     "postStartCommand": "sudo mkdir -p ~/.cache/starship ~/.kube ~/.aws ~/.config/gcloud ~/.pulumi ~/.cache ~/.cargo ~/.azure ~/.vscode-server ~/.terraform.d ~/go/pkg && sudo chown -R ubuntu:ubuntu ~/.cache/starship ~/.kube ~/.aws ~/.config/gcloud ~/.pulumi ~/.cache ~/.cargo ~/.azure ~/.vscode-server ~/.terraform.d ~/go/pkg && sudo chmod -R 755 ~/.cache",
-    "postAttachCommand": "echo 'Welcome to the Zora development environment!' && echo 'Container ID: ${devcontainerId}' && direnv allow && hostname && uptime",
+    "postAttachCommand": "echo 'Welcome to the Zora development environment!' && echo 'Container ID: ${devcontainerId}' && hostname && uptime",
     "customizations": {
         "vscode": {
             "extensions": [
