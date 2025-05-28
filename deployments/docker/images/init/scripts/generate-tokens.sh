@@ -7,13 +7,23 @@ set -e
 echo "Token Generation and Management"
 echo "==============================="
 
-# Configuration
-TOKEN_FILE="/app/tokens/api_tokens.env"
-LITELLM_TOKEN="sk-$(openssl rand -hex 12)"
-OPENWEBUI_TOKEN="$(openssl rand -base64 32)"
+# Configuration with environment variable fallbacks
+# File takes precedence if it exists, otherwise use environment variable
+TOKEN_FILE="${TOKEN_FILE:-/app/tokens/api_tokens.env}"
+CONFIG_DIR="${CONFIG_DIR:-/app/config}"
 
-# Ensure token directory exists
-mkdir -p "$(dirname "$TOKEN_FILE")"
+# Check if token file already exists and has tokens
+if [ -f "$TOKEN_FILE" ] && grep -q "LITELLM_API_TOKEN=" "$TOKEN_FILE" 2>/dev/null; then
+  echo "Loading existing tokens from $TOKEN_FILE"
+  source "$TOKEN_FILE"
+  LITELLM_TOKEN="${LITELLM_API_TOKEN}"
+else
+  # Generate new tokens if not found
+  LITELLM_TOKEN="${LITELLM_API_TOKEN:-sk-$(openssl rand -hex 12)}"
+fi
+
+# Ensure directories exist
+mkdir -p "$(dirname "$TOKEN_FILE")" "$CONFIG_DIR"
 
 # Generate tokens
 function generate_tokens() {
@@ -27,9 +37,6 @@ function generate_tokens() {
 
 # LiteLLM API token (sk-prefixed)
 LITELLM_API_TOKEN=$LITELLM_TOKEN
-
-# OpenWebUI authentication token
-OPENWEBUI_AUTH_TOKEN=$OPENWEBUI_TOKEN
 EOF
 
   echo "Tokens generated and saved to $TOKEN_FILE"
@@ -61,94 +68,8 @@ EOF
       if curl -s -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models | grep -q "data"; then
         echo "OpenAI API key validation successful"
         
-        # Register OpenAI models with LiteLLM API if available
-        if [ -n "$LITELLM_API_URL" ]; then
-          echo "Registering OpenAI models with LiteLLM API..."
-          
-          # Non-blocking check for LiteLLM service
-          MAX_RETRIES=3
-          RETRY_INTERVAL=5
-          retries=0
-          LITELLM_AVAILABLE=false
-          
-          while [ $retries -lt $MAX_RETRIES ]; do
-            # Try multiple ways to check if the API is available (with and without auth)
-            # Option 1: Try master key with health endpoint
-            if curl -s -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" "$LITELLM_API_URL/health" > /dev/null 2>&1; then
-              echo "LiteLLM API is available for OpenAI model registration (authenticated with master key)"
-              LITELLM_AVAILABLE=true
-              break
-            # Option 2: Try v1/models endpoint (may not require auth)
-            elif curl -s "$LITELLM_API_URL/v1/models" > /dev/null 2>&1; then
-              echo "LiteLLM API is available for OpenAI model registration (v1 endpoint)"
-              LITELLM_AVAILABLE=true
-              break
-            # Option 3: Check if API returns 401 (means it's running but needs auth)
-            elif curl -s -o /dev/null -w "%{http_code}" "$LITELLM_API_URL/health" | grep -q "401"; then
-              echo "LiteLLM API is available for OpenAI model registration (requires authentication)"
-              LITELLM_AVAILABLE=true
-              break
-            fi
-            
-            echo "Checking if LiteLLM API is available... (attempt $((retries+1)) of $MAX_RETRIES)"
-            sleep $RETRY_INTERVAL
-            retries=$((retries + 1))
-          done
-          
-          if [ "$LITELLM_AVAILABLE" = false ]; then
-            echo "LiteLLM API not immediately available - OpenAI model registration will be handled later"
-            # Store OpenAI model info for later registration
-            mkdir -p "/app/config"
-            cat > "/app/config/.openai_registration_pending" << EOF
-OPENAI_API_KEY=${OPENAI_API_KEY}
-OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
-OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
-EOF
-            # Continue with initialization regardless
-          else
-            # Register OpenAI completion model
-            COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
-            TEMP_JSON_FILE_COMPLETION=$(mktemp)
-            cat > "$TEMP_JSON_FILE_COMPLETION" << EOF
-{
-  "model_name": "$COMPLETION_MODEL",
-  "litellm_params": {
-    "model": "openai/$COMPLETION_MODEL",
-    "api_key": "${OPENAI_API_KEY}",
-    "drop_params": true
-  }
-}
-EOF
-            echo "Registering OpenAI completion model: $COMPLETION_MODEL"
-            curl -s -X POST "$LITELLM_API_URL/model/new" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
-              -d @"$TEMP_JSON_FILE_COMPLETION"
-            rm "$TEMP_JSON_FILE_COMPLETION"
-            
-            # Register OpenAI embedding model
-            EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
-            TEMP_JSON_FILE_EMBEDDING=$(mktemp)
-            cat > "$TEMP_JSON_FILE_EMBEDDING" << EOF
-{
-  "model_name": "$EMBEDDING_MODEL",
-  "litellm_params": {
-    "model": "openai/$EMBEDDING_MODEL",
-    "api_key": "${OPENAI_API_KEY}",
-    "drop_params": true
-  }
-}
-EOF
-            echo "Registering OpenAI embedding model: $EMBEDDING_MODEL"
-            curl -s -X POST "$LITELLM_API_URL/model/new" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
-              -d @"$TEMP_JSON_FILE_EMBEDDING"
-            rm "$TEMP_JSON_FILE_EMBEDDING"
-            
-            echo "OpenAI models registration complete"
-          fi
-        fi
+        # Model registration will be handled by LiteLLM registration script
+        echo "OpenAI model registration will be handled by dedicated script"
         
         # Even if LiteLLM was not available, we continue with initialization
       else
@@ -208,8 +129,8 @@ function propagate_tokens() {
     if [ "$LITELLM_AVAILABLE" = false ]; then
       echo "LiteLLM API not immediately available - will continue initialization and register tokens later"
       # Create a marker file to indicate token registration is needed
-      mkdir -p "/app/config"
-      echo "$LITELLM_TOKEN" > "/app/config/.token_registration_pending"
+      mkdir -p "$CONFIG_DIR"
+      echo "$LITELLM_TOKEN" > "$CONFIG_DIR/.token_registration_pending"
       # Continue with initialization regardless
     else
       # Register token with LiteLLM API with proper JSON formatting
