@@ -7,11 +7,12 @@ set -e
 echo "Ollama Model Management"
 echo "======================="
 
-# Configuration
-EMBEDDING_MODEL="mxbai-embed-large"
-GENERATION_MODEL="llama3"
-OLLAMA_API="http://ollama:11434/api"
-OLLAMA_API_URL="${OLLAMA_API_URL:-http://ollama:11434}"  # Make sure this is set for LiteLLM registration
+# Configuration with environment variable fallbacks
+EMBEDDING_MODEL="${EMBEDDING_MODEL:-mxbai-embed-large}"
+GENERATION_MODEL="${GENERATION_MODEL:-llama3}"
+OLLAMA_URL="${OLLAMA_URL:-http://ollama:11434}"
+OLLAMA_API="$OLLAMA_URL/api"
+OLLAMA_API_URL="$OLLAMA_URL"  # Make sure this is set for LiteLLM registration
 
 # Function to check if model is already pulled
 function check_model() {
@@ -72,34 +73,8 @@ function pull_model() {
 }
 EOF
         
-        # Non-blocking check for LiteLLM availability with authentication
-        if curl -s --connect-timeout 2 -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" "$LITELLM_API_URL/health" > /dev/null 2>&1 || \
-           curl -s --connect-timeout 2 -H "Authorization: Bearer ${LITELLM_API_TOKEN:-sk-1234}" "$LITELLM_API_URL/models" > /dev/null 2>&1 || \
-           curl -s --connect-timeout 2 "$LITELLM_API_URL/v1/models" > /dev/null 2>&1 || \
-           curl -s --connect-timeout 2 -o /dev/null -w "%{http_code}" "$LITELLM_API_URL/health" | grep -q "401"; then
-          echo "LiteLLM API is available, registering model..."
-          
-          # Send the properly formatted JSON with master key (admin privileges)
-          curl -s -X POST "$LITELLM_API_URL/model/new" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${LITELLM_MASTER_KEY:-sk-1234}" \
-            -d @"$TEMP_JSON_FILE"
-            
-          # Check if model registration was successful
-          if [ $? -eq 0 ]; then
-            echo "Model '$model_name' registered with LiteLLM API successfully"
-          else
-            echo "Warning: Failed to register model '$model_name' with LiteLLM API"
-          fi
-        else
-          echo "LiteLLM API not immediately available - model will be registered during service configuration"
-          
-          # Store model info for later registration
-          mkdir -p "/app/config/pending_models"
-          
-          # Store the model details for later registration
-          cp "$TEMP_JSON_FILE" "/app/config/pending_models/${model_name}.json"
-        fi
+        # Model registration will be handled by LiteLLM registration script
+        echo "Model registration will be handled by dedicated script"
         
         # Clean up temp file
         rm "$TEMP_JSON_FILE"
