@@ -76,13 +76,8 @@ class DocumentProcessor:
             # Process with services if available
             if self.embedding_service and self.storage_service and chunks:
                 try:
-                    # Verify that chunks contains valid Document objects
-                    valid_chunks = [c for c in chunks if hasattr(c, 'metadata')]
-                    if valid_chunks:
-                        embedded_docs = self.embedding_service.embed_documents(valid_chunks)
-                        self.storage_service.add_documents(embedded_docs)
-                    else:
-                        logger.warning(f"No valid document chunks to process for {file_path}")
+                    # Store the documents directly - storage service will handle embeddings
+                    self.storage_service.add_documents(chunks)
                 except Exception as service_err:
                     logger.error(f"Error in embedding/storage services for {file_path}: {service_err}")
                     # Continue processing without embedding/storage
