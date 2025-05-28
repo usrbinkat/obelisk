@@ -1,0 +1,194 @@
+[
+    // ---------------------------------------------------------------------------
+    // 1) Build the container image
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Build"
+    // Command: `devcontainer build`
+    {
+        "label": "DevContainer: Build",
+        "command": "devcontainer",
+        "args": ["build", "--workspace-folder", "$ZED_WORKTREE_ROOT"],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 2) Build without cache (fresh)
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Build (No Cache)"
+    // Command: `devcontainer build --no-cache`
+    {
+        "label": "DevContainer: Build (No Cache)",
+        "command": "devcontainer",
+        "args": [
+            "build",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT",
+            "--no-cache"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 3) Create & run container
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Up"
+    // Command: `devcontainer up`
+    {
+        "label": "DevContainer: Up",
+        "command": "devcontainer",
+        "args": ["up", "--workspace-folder", "$ZED_WORKTREE_ROOT"],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 4) Recreate container (force remove then up)
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Recreate"
+    // Command: `devcontainer up --remove-existing-container`
+    {
+        "label": "DevContainer: Recreate",
+        "command": "devcontainer",
+        "args": [
+            "up",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT",
+            "--remove-existing-container"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 5) Run all user setup commands
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Run User Commands"
+    // Command: `devcontainer run-user-commands`
+    {
+        "label": "DevContainer: Run User Commands",
+        "command": "devcontainer",
+        "args": [
+            "run-user-commands",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 6) Open an interactive shell inside the container
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Exec Shell (/bin/bash)"
+    // Command: `devcontainer exec`
+    {
+        "label": "DevContainer: Exec Shell (/bin/bash)",
+        "command": "devcontainer",
+        "args": [
+            "exec",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT",
+            "/bin/bash"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": true,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 7) Exec an arbitrary command (editable)
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Exec (Custom)"
+    // Example: replace `echo` args for custom commands.
+    {
+        "label": "DevContainer: Exec (Custom)",
+        "command": "devcontainer",
+        "args": [
+            "exec",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT",
+            "echo",
+            "Hello from DevContainer"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": true,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 8) Inspect resolved configuration
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Read Configuration"
+    {
+        "label": "DevContainer: Read Configuration",
+        "command": "devcontainer",
+        "args": [
+            "read-configuration",
+            "--workspace-folder",
+            "$ZED_WORKTREE_ROOT"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 9) Check for outdated components
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Outdated"
+    {
+        "label": "DevContainer: Outdated",
+        "command": "devcontainer",
+        "args": ["outdated", "--workspace-folder", "$ZED_WORKTREE_ROOT"],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 10) Upgrade lockfile(s)
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Upgrade Lockfile"
+    {
+        "label": "DevContainer: Upgrade Lockfile",
+        "command": "devcontainer",
+        "args": ["upgrade", "--workspace-folder", "$ZED_WORKTREE_ROOT"],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    },
+
+    // ---------------------------------------------------------------------------
+    // 11) Full rebuild: build --no-cache, recreate, then run setup
+    // ---------------------------------------------------------------------------
+    // Label: "DevContainer: Rebuild Container"
+    {
+        "label": "DevContainer: Rebuild Container",
+        "command": "bash",
+        "args": [
+            "-c",
+            "devcontainer build --workspace-folder $ZED_WORKTREE_ROOT --no-cache && devcontainer up --workspace-folder $ZED_WORKTREE_ROOT --remove-existing-container && devcontainer run-user-commands --workspace-folder $ZED_WORKTREE_ROOT"
+        ],
+        "use_new_terminal": true,
+        "allow_concurrent_runs": false,
+        "reveal": "always",
+        "tags": ["devcontainer"]
+    }
+]
