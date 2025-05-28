@@ -28,7 +28,7 @@ RUN poetry install --no-interaction --no-ansi --no-root --with=rag
 COPY src/ /app/src/
 
 # Create data directory
-RUN mkdir -p /app/data/chroma_db
+RUN mkdir -p /app/data
 RUN mkdir -p /app/vault
 
 # Expose RAG API port
@@ -37,10 +37,9 @@ EXPOSE 8000
 # Set environment variables
 ENV PYTHONPATH="/app"
 ENV VAULT_DIR="/app/vault"
-ENV CHROMA_DIR="/app/data/chroma_db"
 ENV OLLAMA_URL="http://ollama:11434"
 ENV OLLAMA_MODEL="llama3"
-ENV EMBEDDING_MODEL="mxbai-embed-large"
+ENV EMBEDDING_MODEL="text-embedding-3-large"
 ENV API_HOST="0.0.0.0"
 ENV API_PORT="8000"
 ENV LOG_LEVEL="DEBUG"
