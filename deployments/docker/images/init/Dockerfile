@@ -7,6 +7,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     curl \
     bash \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directories for mounting volumes

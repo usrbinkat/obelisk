@@ -59,3 +59,4 @@ cookies.txt
 .test_artifacts/
 .test_chroma/
 .pytest_cache/
+TASK.*

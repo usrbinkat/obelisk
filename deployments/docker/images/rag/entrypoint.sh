@@ -3,6 +3,20 @@ set -e
 
 echo "Starting Obelisk RAG service..."
 
+# Load tokens from volume if available
+if [ -f "/app/tokens/api_tokens.env" ]; then
+    echo "Loading API tokens from /app/tokens/api_tokens.env"
+    # Use set -a to export all variables automatically
+    set -a
+    source /app/tokens/api_tokens.env
+    set +a
+    # Export the LiteLLM API token
+    export LITELLM_API_KEY="${LITELLM_API_TOKEN}"
+    echo "Loaded LITELLM_API_KEY: ${LITELLM_API_KEY:0:10}..."
+else
+    echo "Warning: No tokens file found at /app/tokens/api_tokens.env"
+fi
+
 # Basic networking info
 echo "Container hostname: $(hostname)"
 echo "Container IP: $(hostname -i || echo 'Not available')"

@@ -15,10 +15,13 @@ def test_default_config():
     
     # Check default values
     assert config.get("vault_dir") == "./vault"
-    assert config.get("chroma_dir") == "./.obelisk/vectordb"
+    assert config.get("milvus_host") == "milvus"
+    assert config.get("milvus_port") == 19530
+    assert config.get("milvus_collection") == "obelisk_rag"
     assert config.get("ollama_url") == "http://localhost:11434"
     assert config.get("ollama_model") == "llama3"
-    assert config.get("embedding_model") == "mxbai-embed-large"
+    assert config.get("embedding_model") == "text-embedding-3-large"
+    assert config.get("embedding_dim") == 3072
     assert config.get("chunk_size") == 2500
     assert config.get("chunk_overlap") == 500
     assert config.get("retrieve_top_k") == 5
@@ -41,7 +44,7 @@ def test_config_override():
     assert config.get("chunk_size") == 2000
     
     # Check that other values remain defaults
-    assert config.get("chroma_dir") == "./.obelisk/vectordb"
+    assert config.get("milvus_host") == "milvus"
     assert config.get("ollama_url") == "http://localhost:11434"
 
 
@@ -60,7 +63,7 @@ def test_config_env_override():
     assert config.get("retrieve_top_k") == 5
     
     # Check that other values remain defaults
-    assert config.get("chroma_dir") == "./.obelisk/vectordb"
+    assert config.get("milvus_host") == "milvus"
     assert config.get("ollama_url") == "http://localhost:11434"
 
 
@@ -76,7 +79,7 @@ def test_get_config():
     
     # Verify it has the default values
     assert config.get("vault_dir") == "./vault"
-    assert config.get("chroma_dir") == "./.obelisk/vectordb"
+    assert config.get("milvus_host") == "milvus"
 
 
 def test_config_set():

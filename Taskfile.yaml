@@ -2,36 +2,36 @@ version: '3'
 
 tasks:
   run:
-    desc: Fast development server with live reload and dirty builds
+    desc: "Fast development server with live reload and dirty builds"
     cmds:
       - pkill -f "mkdocs serve" || true
       - poetry run mkdocs serve --livereload --dirty
 
   serve:
-    desc: Build and serve the static site with live reload and open browser
+    desc: "Build and serve the static site with live reload and open browser"
     cmds:
       - pkill -f "mkdocs serve" || true
       - poetry run mkdocs serve --livereload --watch-theme --open
 
   build:
-    desc: Build the static site without serving
+    desc: "Build the static site without serving"
     cmds:
       - poetry run mkdocs build
 
   test:
-    desc: Build the static site with strict mode to catch errors
+    desc: "Build the static site with strict mode to catch errors"
     cmds:
       - poetry run mkdocs build --clean --strict
       
   test-all:
-    desc: Run all unit and integration tests
+    desc: "Run all unit and integration tests"
     cmds:
       - echo "Running all unit and integration tests..."
       - poetry run pytest -xvs tests/unit/ tests/integration/
       - echo "All tests completed successfully!"
 
   new:
-    desc: Create a new markdown file in vault
+    desc: "Create a new markdown file in vault"
     cmds:
       - mkdir -p vault
       - |
@@ -44,17 +44,17 @@ tasks:
         EOF
 
   install:
-    desc: Install or update dependencies with Poetry
+    desc: "Install or update dependencies with Poetry"
     cmds:
       - poetry install --no-root
 
   update:
-    desc: Update all dependencies to their latest versions
+    desc: "Update all dependencies to their latest versions"
     cmds:
       - poetry update
 
   clean:
-    desc: Clean build artifacts and kill running mkdocs processes
+    desc: "Clean build artifacts and kill running mkdocs processes"
     cmds:
       - pkill -f "mkdocs serve" || true
       - rm -rf site
@@ -62,31 +62,37 @@ tasks:
       - echo "Basic cleanup completed."
 
   clean-all:
-    desc: Stop all containers and clean all cache/test files but preserve Ollama volume and images
+    desc: "Stop all containers and clean all cache/test files but preserve Ollama volume"
     cmds:
       - task: clean
-      - echo "Cleaning project caches and test artifacts..."
-      - rm -rf .pytest_cache
-      - rm -rf .test_artifacts
-      - rm -rf .test_chroma
+      - rm -rf .pytest_cache .test_artifacts .test_chroma
       - find . -name ".coverage" -delete
       - find . -name "*.pyc" -delete
       - find . -name "*.pyo" -delete
       - find . -name "*~" -delete
-      - echo "Stopping all services..."
-      - docker compose -f deployments/docker/compose/dev.yaml down 2>/dev/null || true
-      - echo "Stopping specific containers..."
-      - docker stop init-service litellm litellm_db milvus-standalone milvus-etcd milvus-minio 2>/dev/null || true
-      - echo "Removing specific containers..."
-      - docker rm -f init-service litellm litellm_db milvus-standalone milvus-etcd milvus-minio 2>/dev/null || true
-      - echo "Removing volumes (preserving Ollama models)..."
-      - docker volume rm obelisk_config obelisk_etcd_data obelisk_milvus_data obelisk_minio_data obelisk_postgres_data obelisk_tokens 2>/dev/null || true
-      - echo "Removing obelisk images..."
-      - docker rmi obelisk-obelisk obelisk-obelisk-rag obelisk-init-service 2>/dev/null || true
-      - echo "Clean-all completed. Ollama volumes and container images preserved for faster testing."
+      # First try compose down with cleanup
+      - docker compose -f deployments/docker/compose/dev.yaml down -v --remove-orphans 2>/dev/null || true
+      # Stop and remove all containers that might exist from previous runs
+      # Use exact container names without regex to avoid issues
+      - docker rm -f init-service 2>/dev/null || true
+      - docker rm -f litellm 2>/dev/null || true
+      - docker rm -f litellm_db 2>/dev/null || true
+      - docker rm -f milvus-standalone 2>/dev/null || true
+      - docker rm -f milvus-etcd 2>/dev/null || true
+      - docker rm -f milvus-minio 2>/dev/null || true
+      - docker rm -f obelisk 2>/dev/null || true
+      - docker rm -f obelisk-rag 2>/dev/null || true
+      - docker rm -f tika 2>/dev/null || true
+      - docker rm -f ollama 2>/dev/null || true
+      # Remove all compose_ prefixed volumes
+      - docker volume ls --format "{{`{{.Name}}`}}" | grep "^compose_" | xargs -r docker volume rm -f 2>/dev/null || true
+      # Remove compose networks
+      - docker network ls --format "{{`{{.Name}}`}}" | grep "^compose_" | xargs -r docker network rm 2>/dev/null || true
+      # Remove images
+      - docker rmi compose-obelisk compose-obelisk-rag compose-init-service 2>/dev/null || true
 
   clean-all-purge:
-    desc: Clean everything including all containers, images, volumes, networks, and project artifacts
+    desc: "Clean everything including all containers, images, volumes, networks, and project artifacts"
     cmds:
       - task: clean-all
       - echo "Also removing Ollama volumes and container images..."
@@ -97,27 +103,27 @@ tasks:
       - echo "Clean-all-purge completed."
 
   docker-build-legacy:
-    desc: Build legacy Docker container
+    desc: "Build legacy Docker container"
     cmds:
       - docker build -t obelisk:latest .
 
   docker-run:
-    desc: Run the Docker container for development
+    desc: "Run the Docker container for development"
     cmds:
       - docker run -p 8000:8000 -v ${PWD}/vault:/app/vault -v ${PWD}/mkdocs.yml:/app/mkdocs.yml -v ${PWD}/pyproject.toml:/app/pyproject.toml -v ${PWD}/poetry.lock:/app/poetry.lock obelisk:latest
 
   compose:
-    desc: Run the full stack with docker-compose
+    desc: "Run the full stack with docker-compose"
     cmds:
       - docker-compose up
 
   compose-obelisk:
-    desc: Run only the obelisk service with docker-compose
+    desc: "Run only the obelisk service with docker-compose"
     cmds:
       - docker-compose up obelisk
 
   gh-pages:
-    desc: Deploy to GitHub Pages
+    desc: "Deploy to GitHub Pages"
     cmds:
       - poetry run mkdocs gh-deploy --force
 
@@ -132,69 +138,207 @@ tasks:
       - poetry run mike set-default --push {{.CLI_ARGS}}
 
   test-prep-openai:
-    desc: Prepare environment for OpenAI integration testing (runs long-duration commands)
+    desc: "Prepare environment for OpenAI integration testing (runs long-duration commands)"
     cmds:
       - ./tests/scripts/integration/test_prep_openai.sh
       
-  docker:
-    desc: Run Docker stack from reorganized structure (detached)
+  docker-pull:
+    desc: "Pull all required Docker images"
     cmds:
-      - docker compose -f deployments/docker/compose/dev.yaml up -d {{.CLI_ARGS}}
+      - docker compose -f deployments/docker/compose/dev.yaml pull
+      
+  docker-start-infra:
+    desc: "Start infrastructure services (etcd, minio, postgres, ollama, tika)"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d etcd minio litellm_db ollama tika
+      - sleep 10
+      
+  docker-start-milvus:
+    desc: "Start Milvus vector database"
+    deps: [docker-start-infra]
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d milvus
+      - cmd: 'until curl -s http://localhost:19530/v1/vector/collections >/dev/null 2>&1; do sleep 2; done'
+        ignore_error: true
+      
+  docker-start-litellm:
+    desc: "Start LiteLLM proxy"
+    deps: [docker-start-infra]
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d litellm
+      - cmd: 'until curl -s http://localhost:4000/health >/dev/null 2>&1; do sleep 2; done'
+        ignore_error: true
+      
+  docker-init:
+    desc: "Run init-service for tokens and model registration"
+    deps: [docker-start-milvus, docker-start-litellm]
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d init-service
+      - docker compose -f deployments/docker/compose/dev.yaml logs init-service
+      - task: docker-wait-init
+      
+  docker-start-apps:
+    desc: "Start application services"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d obelisk obelisk-rag
+      - cmd: 'until curl -s http://localhost:8000 >/dev/null 2>&1 && curl -s http://localhost:8001/stats >/dev/null 2>&1; do sleep 2; done'
+        ignore_error: true
+      
+  docker:
+    desc: "Run complete Docker stack (use docker-build for fresh builds)"
+    cmds:
+      - task: docker-pull
+      - task: docker-init
+      - task: docker-start-apps
       
   docker-build:
-    desc: Build and run Docker stack from reorganized structure (detached)
+    desc: "Build and run complete Docker stack"
     cmds:
-      - docker compose -f deployments/docker/compose/dev.yaml up -d --build {{.CLI_ARGS}}
+      - docker compose -f deployments/docker/compose/dev.yaml build
+      - task: docker
       
   docker-config:
-    desc: Validate Docker compose configuration
+    desc: "Validate Docker compose configuration"
     cmds:
       - docker compose -f deployments/docker/compose/dev.yaml config
       
-  docker-test:
-    desc: Run initialization tests against Docker stack
+  docker-wait-init:
+    desc: "Wait for init-service to complete"
     cmds:
-      - |
-        LITELLM_TOKEN=$(docker compose -f deployments/docker/compose/dev.yaml exec -T litellm grep LITELLM_API_TOKEN /app/tokens/api_tokens.env | cut -d= -f2 | tr -d ' \t\n\r')
-        LITELLM_API_TOKEN="$LITELLM_TOKEN" poetry run python tests/scripts/docker/test_init.py --compose-file deployments/docker/compose/dev.yaml
+      # Wait up to 60 seconds for init-service to complete
+      - cmd: |
+          TIMEOUT=60
+          ELAPSED=0
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            STATUS=$(docker compose -f deployments/docker/compose/dev.yaml ps -q init-service | xargs -r docker inspect -f "{{`{{.State.Status}}`}}" 2>/dev/null || echo "")
+            if [ "$STATUS" != "running" ]; then
+              break
+            fi
+            echo "Waiting for init-service... ($ELAPSED/$TIMEOUT seconds)"
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          done
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "WARNING: init-service did not complete within $TIMEOUT seconds"
+            docker compose -f deployments/docker/compose/dev.yaml logs --tail=50 init-service
+          fi
+        ignore_error: true
+      # Check exit code
+      - cmd: |
+          EXIT_CODE=$(docker compose -f deployments/docker/compose/dev.yaml ps -q init-service | xargs -r docker inspect -f "{{`{{.State.ExitCode}}`}}" 2>/dev/null || echo "1")
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "ERROR: init-service exited with code $EXIT_CODE"
+            echo "Recent logs:"
+            docker compose -f deployments/docker/compose/dev.yaml logs --tail=100 init-service
+            exit 1
+          fi
+          echo "init-service completed successfully"
+      
+  docker-test:
+    desc: "Run initialization tests against Docker stack"
+    deps: [docker-wait-init]
+    vars:
+      LITELLM_TOKEN:
+        sh: docker compose -f deployments/docker/compose/dev.yaml exec -T litellm grep LITELLM_API_TOKEN /app/tokens/api_tokens.env 2>/dev/null | cut -d= -f2 | tr -d ' \t\n\r'
+    cmds:
+      - LITELLM_API_TOKEN="{{.LITELLM_TOKEN}}" poetry run python tests/scripts/docker/test_init.py --compose-file deployments/docker/compose/dev.yaml
         
+  docker-index:
+    desc: "Index vault documents in Milvus"
+    cmds:
+      - docker cp vault/. obelisk-rag:/app/vault/
+      - docker exec obelisk-rag obelisk rag index --vault /app/vault
+      - curl -s http://localhost:8001/stats | jq
+      
   docker-stop:
-    desc: Stop Docker services from reorganized structure
+    desc: "Stop Docker services"
     cmds:
       - docker compose -f deployments/docker/compose/dev.yaml stop
       
   docker-down:
-    desc: Stop and remove Docker services from reorganized structure
+    desc: "Stop and remove Docker services"
     cmds:
       - docker compose -f deployments/docker/compose/dev.yaml down {{.CLI_ARGS}}
       
   docker-clean:
-    desc: Stop and remove Docker services, volumes, and networks from reorganized structure
+    desc: "Stop and remove Docker services, volumes, and networks"
     cmds:
       - docker compose -f deployments/docker/compose/dev.yaml down -v --remove-orphans
       
   docker-logs:
     desc: "View logs from Docker services (usage: task docker-logs -- [service])"
     cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml logs {{.CLI_ARGS}}
+      
+  docker-logs-follow:
+    desc: "Follow logs from Docker services (usage: task docker-logs-follow -- [service])"
+    cmds:
       - docker compose -f deployments/docker/compose/dev.yaml logs -f {{.CLI_ARGS}}
       
   docker-ps:
-    desc: List running Docker containers from reorganized structure
+    desc: "List running Docker containers"
     cmds:
       - docker compose -f deployments/docker/compose/dev.yaml ps
       
-  test-rag:
-    desc: Run RAG system tests (unit and integration)
+  docker-wait-models:
+    desc: "Wait for Ollama models to be downloaded"
     cmds:
-      - echo "Running RAG unit tests..."
+      - cmd: 'until docker exec ollama ollama list | grep -q "llama3"; do sleep 10; done'
+        ignore_error: true
+      - cmd: 'until docker exec ollama ollama list | grep -q "mxbai-embed-large"; do sleep 10; done'
+        ignore_error: true
+        
+  docker-validate:
+    desc: "Validate all services are healthy"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml ps
+      - curl -s http://localhost:19530/v1/vector/collections || true
+      - curl -s http://localhost:4000/health || true
+      - 'curl -s http://localhost:8000 >/dev/null && echo "MkDocs: OK" || echo "MkDocs: FAIL"'
+      - curl -s http://localhost:8001/stats || true
+      - 'curl -s http://localhost:8080 >/dev/null && echo "Open-WebUI: OK" || echo "Open-WebUI: FAIL"'
+      
+  docker-status:
+    desc: "Show detailed status of all services"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml ps --format "table {{`{{.Name}}`}}\t{{`{{.Status}}`}}\t{{`{{.Ports}}`}}"
+      - echo ""
+      - echo "Ollama Models:"
+      - docker exec ollama ollama list 2>/dev/null || echo "Ollama not running"
+      - echo ""
+      - echo "LiteLLM Models:"
+      - cmd: 'LITELLM_TOKEN=$(docker exec litellm cat /app/tokens/api_tokens.env 2>/dev/null | grep LITELLM_API_TOKEN | cut -d= -f2) && curl -s http://localhost:4000/v1/models -H "Authorization: Bearer $LITELLM_TOKEN" 2>/dev/null | jq -r ".data[].id" || echo "LiteLLM not accessible"'
+      - echo ""
+      - echo "RAG Stats:"
+      - curl -s http://localhost:8001/stats 2>/dev/null | jq || echo "RAG API not accessible"
+      
+  docker-quick:
+    desc: "Quick start assuming images exist (no pull or build)"
+    cmds:
+      - docker compose -f deployments/docker/compose/dev.yaml up -d
+      - task: docker-wait-init
+      - task: docker-index
+      
+  docker-restart:
+    desc: "Restart all services preserving data"
+    cmds:
+      - task: docker-stop
+      - task: docker-quick
+      
+  docker-fresh:
+    desc: "Complete fresh start with cleanup"
+    cmds:
+      - task: clean-all
+      - task: docker-build
+      - task: docker-index
+      
+  test-rag:
+    desc: "Run RAG system tests (unit and integration)"
+    cmds:
       - poetry run pytest -xvs tests/unit/rag/
-      - echo "Running RAG integration tests..."
       - poetry run pytest -xvs tests/integration/rag/
-      - echo "All RAG tests completed successfully!"
       
   test-rag-e2e:
-    desc: Run RAG end-to-end tests (requires running Milvus)
+    desc: "Run RAG end-to-end tests (requires running Milvus)"
     cmds:
-      - echo "Running RAG end-to-end tests..."
       - poetry run python tests/scripts/integration/test_rag_e2e.py
-      - echo "RAG end-to-end tests completed successfully!"

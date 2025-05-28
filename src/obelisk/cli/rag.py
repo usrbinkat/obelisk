@@ -202,10 +202,16 @@ def handle_serve(args):
     # Initialize service
     service = RAGService(RAGConfig(config))
     
-    # Index documents
-    print(f"Indexing documents in {service.config.get('vault_dir')}...")
-    count = service.process_vault()
-    print(f"Indexed {count} document chunks")
+    # Check if auto-indexing is disabled
+    auto_index = os.getenv("AUTO_INDEX_ON_START", "true").lower() == "true"
+    
+    if auto_index:
+        # Index documents
+        print(f"Indexing documents in {service.config.get('vault_dir')}...")
+        count = service.process_vault()
+        print(f"Indexed {count} document chunks")
+    else:
+        print("Auto-indexing disabled. Use 'obelisk rag index' to manually index documents.")
     
     # Start document watcher if requested
     if args.watch:

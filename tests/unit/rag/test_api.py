@@ -16,8 +16,9 @@ from src.obelisk.rag.common.config import RAGConfig
 @pytest.fixture
 def mock_rag_service():
     """Create a mock RAG service."""
-    with patch('src.obelisk.rag.api.openai.service') as mock:
-        mock.query.return_value = {
+    with patch('src.obelisk.rag.api.openai.get_service') as mock_get_service:
+        mock_service = MagicMock()
+        mock_service.query.return_value = {
             "query": "What is Obelisk?",
             "context": [
                 Document(page_content="Obelisk is a RAG tool", metadata={"source": "doc1.md"}),
@@ -27,8 +28,9 @@ def mock_rag_service():
             "no_context": False
         }
         
-        mock.config = RAGConfig()
-        yield mock
+        mock_service.config = RAGConfig()
+        mock_get_service.return_value = mock_service
+        yield mock_service
 
 
 @pytest.fixture

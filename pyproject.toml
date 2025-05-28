@@ -48,11 +48,11 @@ optional = true
 langchain = ">=0.3.24"
 langchain-community = ">=0.3.22"
 langchain-ollama = ">=0.3.2"
-langchain-chroma = ">=0.2.3,<0.3.0"
 
 # Vector DB and embeddings
-chromadb = ">=0.4.0,<0.7.0"
-grpcio = ">=1.71.0,<2.0.0"  # Required for gRPC communication with vector DB
+# TODO: grpcio version conflict - pymilvus 2.5.10 requires grpcio <=1.67.1, but we have >=1.71.0
+# Need to either: 1) Find newer pymilvus version, 2) Downgrade grpcio, or 3) Use different Milvus client
+grpcio = ">=1.49.1,<=1.67.1"  # Downgraded for pymilvus compatibility
 
 # API and serving
 fastapi = ">=0.115.0"
@@ -63,7 +63,12 @@ httpx = ">=0.28.0"  # HTTP client for API requests
 # File watching
 watchdog = ">=6.0.0"
 
+# Milvus vector database
+pymilvus = "^2.5.10"
+numpy = "^2.2.6"
+
 # Documentation dependencies
+litellm = "^1.71.1"
 [tool.poetry.group.docs]
 optional = true
 

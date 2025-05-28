@@ -10,19 +10,27 @@ import os
 import json
 import logging
 import time
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from src.obelisk.rag.service.coordinator import RAGService
 from src.obelisk.rag.common.config import get_config
+from src.obelisk.rag.common.providers import ModelProviderFactory, ProviderType
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Initialize service
-service = RAGService(get_config())
+# Service will be initialized lazily
+_service = None
+
+def get_service() -> RAGService:
+    """Get or create the RAG service instance."""
+    global _service
+    if _service is None:
+        _service = RAGService(get_config())
+    return _service
 
 # Create router
 router = APIRouter()
@@ -63,15 +71,19 @@ class ChatCompletionResponse(BaseModel):
     sources: Optional[List[SourceInfo]] = Field(None, description="Source documents used in RAG")
 
 @router.post("/v1/chat/completions", response_model=ChatCompletionResponse)
-async def create_chat_completion(request: ChatCompletionRequest):
+async def create_chat_completion(
+    request: ChatCompletionRequest,
+    x_provider_override: Optional[str] = None
+):
     """
     Create a chat completion with RAG enhancement.
     
-    This endpoint mimics the OpenAI API format but uses the RAG system to
-    enhance responses with relevant document context.
+    This endpoint provides an OpenAI-compatible API that:
+    - Routes all completions through LiteLLM by default
+    - Supports provider override via X-Provider-Override header
+    - Enhances responses with RAG context
     """
     # Extract the query from the messages
-    # Typically, we want the last user message
     user_messages = [msg for msg in request.messages if msg.role == "user"]
     if not user_messages:
         error_msg = "No user messages found in the request"
@@ -80,9 +92,26 @@ async def create_chat_completion(request: ChatCompletionRequest):
     
     try:
         query = user_messages[-1].content
+        config = get_config()
         
-        # Process the query through RAG
-        rag_result = service.query(query)
+        # Determine provider based on operation type and override
+        if x_provider_override and x_provider_override.lower() == "ollama":
+            # Special case: direct Ollama for hardware tuning operations
+            provider_type = ProviderType.OLLAMA
+            logger.info("Using direct Ollama provider due to X-Provider-Override header")
+        else:
+            # Default: all completions through LiteLLM
+            provider_type = ProviderType.LITELLM
+            logger.info(f"Using LiteLLM provider for model: {request.model}")
+        
+        # Process the query through RAG with the selected provider
+        rag_result = get_service().query(
+            query, 
+            model=request.model,
+            provider_type=provider_type,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens
+        )
         
         # Create sources information if available
         sources = None
@@ -113,7 +142,7 @@ async def create_chat_completion(request: ChatCompletionRequest):
             usage=ChatCompletionResponseUsage(
                 prompt_tokens=len(query.split()),  # Rough estimate
                 completion_tokens=len(rag_result["response"].split()),  # Rough estimate
-                total_tokens=len(query.split()) + len(rag_result["response"].split())  # Rough estimate
+                total_tokens=len(query.split()) + len(rag_result["response"].split())
             ),
             sources=sources
         )
