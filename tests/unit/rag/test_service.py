@@ -4,11 +4,12 @@ import os
 import pytest
 import tempfile
 import shutil
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, Mock
 
 from langchain.schema.document import Document
 from src.obelisk.rag.service.coordinator import RAGService
 from src.obelisk.rag.common.config import RAGConfig
+from src.obelisk.rag.common.models import ModelProvider
 
 
 @pytest.fixture
@@ -23,8 +24,10 @@ def temp_dir():
 def config(temp_dir):
     """Create a test configuration."""
     return RAGConfig({
+        "model_provider": "ollama",
         "ollama_url": "http://localhost:11434",
         "ollama_model": "llama3",
+        "llm_model": "llama3",
         "embedding_model": "mxbai-embed-large",
         "chroma_dir": os.path.join(temp_dir, "vectordb"),
         "vault_dir": temp_dir,
@@ -33,18 +36,25 @@ def config(temp_dir):
 
 
 @pytest.fixture
-def mock_ollama_chat():
-    """Create a mock ChatOllama."""
-    with patch('src.obelisk.rag.service.coordinator.ChatOllama') as mock:
-        mock_instance = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "This is a mock response from the model."
-        mock_instance.invoke.return_value = mock_response
-        
-        # Make the constructor return our mock instance
-        mock.return_value = mock_instance
-        
-        yield mock_instance
+def mock_provider():
+    """Create a mock ModelProvider."""
+    provider = Mock(spec=ModelProvider)
+    
+    # Create mock LLM instance
+    mock_llm = MagicMock()
+    mock_response = MagicMock()
+    mock_response.content = "This is a mock response from the model."
+    mock_llm.invoke.return_value = mock_response
+    
+    # Create mock embeddings instance
+    mock_embeddings = MagicMock()
+    mock_embeddings.embed_query.return_value = [0.1, 0.2, 0.3]
+    
+    # Configure provider to return our mocks
+    provider.get_llm.return_value = mock_llm
+    provider.get_embeddings.return_value = mock_embeddings
+    
+    return provider
 
 
 @pytest.fixture
@@ -97,10 +107,13 @@ def mock_document_processor():
 
 
 @pytest.fixture
-def service(config, mock_ollama_chat, mock_embedding_service, 
+def service(config, mock_provider, mock_embedding_service, 
             mock_storage_service, mock_document_processor):
     """Create a RAG service with mocked components."""
-    return RAGService(config)
+    # Patch EmbeddingService to pass the provider along
+    mock_embedding_service.provider = mock_provider
+    
+    return RAGService(config, provider=mock_provider)
 
 
 def test_service_initialization(service, config):
@@ -124,7 +137,7 @@ def test_process_vault(service, mock_document_processor):
     assert count == 10
 
 
-def test_query_with_context(service, mock_embedding_service, mock_storage_service, mock_ollama_chat):
+def test_query_with_context(service, mock_embedding_service, mock_storage_service):
     """Test querying the system with results."""
     query_text = "What is Obelisk?"
     result = service.query(query_text)
@@ -132,7 +145,7 @@ def test_query_with_context(service, mock_embedding_service, mock_storage_servic
     # Check that services were called with correct arguments
     mock_embedding_service.embed_query.assert_called_once_with(query_text)
     mock_storage_service.search_with_embedding.assert_called_once()
-    mock_ollama_chat.invoke.assert_called_once()
+    service.llm.invoke.assert_called_once()
     
     # Check result format
     assert result["query"] == query_text
@@ -141,7 +154,7 @@ def test_query_with_context(service, mock_embedding_service, mock_storage_servic
     assert result["no_context"] is False
 
 
-def test_query_without_context(service, mock_embedding_service, mock_storage_service, mock_ollama_chat):
+def test_query_without_context(service, mock_embedding_service, mock_storage_service):
     """Test querying the system with no results."""
     # Configure mock to return empty results
     mock_storage_service.search_with_embedding.return_value = []
@@ -163,5 +176,6 @@ def test_get_stats(service, mock_storage_service):
     # Check stats
     assert stats["document_count"] == 42
     assert stats["vector_db_path"] == "/path/to/vectordb"
-    assert stats["ollama_model"] == "llama3"
+    assert stats["model_provider"] == "ollama"
+    assert stats["llm_model"] == "llama3"
     assert stats["embedding_model"] == "mxbai-embed-large"
