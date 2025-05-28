@@ -1,17 +1,18 @@
 """
 Embedding generation for the Obelisk RAG system.
 
-This module provides embedding generation capabilities using Ollama.
+This module provides embedding generation capabilities using configurable model providers.
 It handles the conversion of text chunks to vector embeddings.
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from langchain.schema.document import Document
-from langchain_ollama import OllamaEmbeddings
 
 from src.obelisk.rag.common.config import get_config
+from src.obelisk.rag.common.models import get_model_provider, ModelProvider
+from src.obelisk.rag.common.providers import ModelProviderFactory, ProviderType
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -20,61 +21,54 @@ logger = logging.getLogger(__name__)
 class EmbeddingService:
     """Service for generating embeddings from text."""
     
-    def __init__(self, config=None):
-        """Initialize the embedding service."""
+    def __init__(self, config=None, provider: Optional[ModelProvider] = None):
+        """Initialize the embedding service.
+        
+        Args:
+            config: Optional configuration dictionary
+            provider: Optional pre-initialized model provider
+        """
         self.config = config or get_config()
+        
+        # Force LiteLLM for all embeddings when force_litellm_proxy is True
+        if provider:
+            self.provider = provider
+        elif self.config.get("force_litellm_proxy", True):
+            # Always use LiteLLM for embeddings (unified API)
+            self.provider = ModelProviderFactory.create(
+                ProviderType.LITELLM, 
+                self.config
+            )
+        else:
+            # Fallback to configured provider (for backward compatibility)
+            self.provider = get_model_provider(self.config)
+        
+        # Get embedding model from config
         self.model_name = self.config.get("embedding_model")
-        self.ollama_url = self.config.get("ollama_url")
         
         # Debug info
+        provider_type = "litellm" if self.config.get("force_litellm_proxy", True) else self.config.get("model_provider", "litellm")
+        logger.info(f"Embedding service using provider: {provider_type}")
         logger.info(f"Embedding model: {self.model_name!r}")
-        logger.info(f"Ollama URL: {self.ollama_url!r}")
         
-        # Initialize the embedding model with explicit string values
-        # This ensures we never pass None to the model parameter
-        model_name = self.model_name or "mxbai-embed-large"
-        ollama_url = self.ollama_url or "http://ollama:11434"
-        
-        self.embeddings_model = OllamaEmbeddings(
-            model=model_name,
-            base_url=ollama_url
+        # Initialize the embedding model through the provider
+        self.embeddings_model = self.provider.get_embeddings(
+            model=self.model_name
         )
     
-    def embed_documents(self, documents: List[Document]) -> List[Document]:
-        """Generate embeddings for a list of documents."""
-        if not documents:
-            return documents
-        
-        # Ensure we have valid Document objects
-        valid_docs = []
-        for doc in documents:
-            if not isinstance(doc, Document) or not hasattr(doc, 'metadata'):
-                logger.warning(f"Invalid document encountered: {type(doc)}")
-                continue
-            valid_docs.append(doc)
-        
-        if not valid_docs:
-            logger.warning("No valid documents to embed")
-            return documents
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for a list of texts."""
+        if not texts:
+            return []
             
         try:
-            # Extract text from documents
-            texts = [doc.page_content for doc in valid_docs]
-            
-            # Generate embeddings - no need to store in metadata
-            # just proceed with the model embedding call to ensure
-            # the model is working correctly
-            try:
-                self.embeddings_model.embed_documents(texts)
-            except Exception as embed_err:
-                logger.error(f"Error during embedding: {embed_err}")
-                # Continue anyway - the vector store will handle embeddings
-            
-            # Return the original documents without modification
-            return documents
+            # Generate embeddings using the provider
+            embeddings = self.embeddings_model.embed_documents(texts)
+            logger.info(f"Generated {len(embeddings)} embeddings")
+            return embeddings
         except Exception as e:
             logger.error(f"Error generating embeddings: {e}")
-            return documents
+            return []
     
     def embed_query(self, query: str) -> List[float]:
         """Generate embedding for a query string."""
