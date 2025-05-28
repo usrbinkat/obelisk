@@ -1,0 +1,549 @@
+services:
+  # Milvus ecosystem services (unchanged from your original)
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.21
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  milvus:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.5.10
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # LiteLLM Proxy (unchanged from your original)
+  litellm:
+    container_name: litellm
+    image: ghcr.io/berriai/litellm:main-latest
+    ports:
+      - "4000:4000"
+    environment:
+      - LITELLM_MASTER_KEY=sk-1234
+      - LITELLM_ADMIN_PASSWORD=${LITELLM_ADMIN_PASSWORD:-admin}
+      - DATABASE_URL=postgresql://postgres:postgres@litellm_db:5432/postgres
+      - MODEL_NAME_1=llama3
+      - MODEL_1=ollama/llama3
+      - MODEL_API_BASE_1=http://ollama:11434
+      - MODEL_NAME_2=mxbai-embed-large
+      - MODEL_2=ollama/mxbai-embed-large
+      - MODEL_API_BASE_2=http://ollama:11434
+      - OLLAMA_API_BASE=http://ollama:11434
+      - STORE_MODEL_IN_DB=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - USE_OPENAI=${USE_OPENAI:-false}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
+      - OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
+      - LITELLM_MODEL_CONFIG=/app/config/litellm_config.yaml
+      - LITELLM_TOKEN_UID=obelisk-api-token
+    volumes:
+      - tokens:/app/tokens:ro
+      - config:/app/config:rw
+    command: ["--port", "4000"]
+    networks:
+      - ollama-net
+    depends_on:
+      - litellm_db
+      - ollama
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  litellm_db:
+    image: postgres:17.4
+    container_name: litellm_db
+    restart: always
+    environment:
+      - POSTGRES_USER=${LITELLM_POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${LITELLM_POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PORT=${LITELLM_POSTGRES_PORT:-5432}
+      - POSTGRES_DATABASE=${LITELLM_POSTGRES_DATABASE:-postgres}
+      - POSTGRES_HOST=${LITELLM_POSTGRES_HOST:-litellm_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Tika service (unchanged)
+  tika:
+    image: apache/tika:3.1.0.0-full
+    container_name: tika
+    ports:
+      - "9998:9998"
+    restart: unless-stopped
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify Database (PostgreSQL)
+  dify_db:
+    image: postgres:15-alpine
+    container_name: dify-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DIFY_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
+      POSTGRES_DB: ${DIFY_POSTGRES_DB:-dify}
+      PGUSER: ${DIFY_POSTGRES_USER:-postgres}
+    volumes:
+      - dify_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify Redis
+  dify_redis:
+    image: redis:7-alpine
+    container_name: dify-redis
+    restart: always
+    volumes:
+      - dify_redis_data:/data
+    command: redis-server --requirepass ${DIFY_REDIS_PASSWORD:-difyai123456}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${DIFY_REDIS_PASSWORD:-difyai123456}", "ping"]
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify Sandbox Service
+  dify_sandbox:
+    image: langgenius/dify-sandbox:0.2.10
+    container_name: dify-sandbox
+    restart: always
+    environment:
+      API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}
+      GIN_MODE: ${SANDBOX_GIN_MODE:-release}
+      WORKER_TIMEOUT: ${SANDBOX_WORKER_TIMEOUT:-15}
+      ENABLE_NETWORK: ${SANDBOX_ENABLE_NETWORK:-true}
+      HTTP_PROXY: ${SANDBOX_HTTP_PROXY:-http://dify_ssrf_proxy:3128}
+      HTTPS_PROXY: ${SANDBOX_HTTPS_PROXY:-http://dify_ssrf_proxy:3128}
+      SANDBOX_PORT: ${SANDBOX_PORT:-8194}
+    volumes:
+      - dify_sandbox_data:/dependencies
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8194/health"]
+    networks:
+      - ssrf_proxy_network
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify SSRF Proxy
+  dify_ssrf_proxy:
+    image: ubuntu/squid:latest
+    container_name: dify-ssrf-proxy
+    restart: always
+    volumes:
+      - dify_ssrf_config:/etc/squid
+    networks:
+      - ssrf_proxy_network
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Shared environment configuration for Dify services
+  x-dify-common-env: &dify-common-env
+    # Basic configurations
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    DEBUG: ${DEBUG:-false}
+    FLASK_DEBUG: ${FLASK_DEBUG:-false}
+    SECRET_KEY: ${SECRET_KEY:-sk-9f73s3ljTXVcMT3Blb3ljTqtsKiGHXVcMT3BlbkFJLK7U}
+    DEPLOY_ENV: ${DEPLOY_ENV:-PRODUCTION}
+    
+    # Database configurations
+    DB_USERNAME: ${DIFY_POSTGRES_USER:-postgres}
+    DB_PASSWORD: ${DIFY_POSTGRES_PASSWORD:-difyai123456}
+    DB_HOST: dify_db
+    DB_PORT: 5432
+    DB_DATABASE: ${DIFY_POSTGRES_DB:-dify}
+    
+    # Redis configurations
+    REDIS_HOST: dify_redis
+    REDIS_PORT: 6379
+    REDIS_USERNAME: ${REDIS_USERNAME:-}
+    REDIS_PASSWORD: ${DIFY_REDIS_PASSWORD:-difyai123456}
+    REDIS_USE_SSL: ${REDIS_USE_SSL:-false}
+    REDIS_DB: 0
+    
+    # Celery configurations
+    CELERY_BROKER_URL: redis://:${DIFY_REDIS_PASSWORD:-difyai123456}@dify_redis:6379/1
+    
+    # Storage configurations
+    STORAGE_TYPE: ${STORAGE_TYPE:-local}
+    STORAGE_LOCAL_PATH: /app/api/storage
+    
+    # Vector store configuration - Milvus
+    VECTOR_STORE: milvus
+    MILVUS_URI: http://milvus:19530
+    MILVUS_TOKEN: ${MILVUS_TOKEN:-}
+    MILVUS_USER: ${MILVUS_USER:-}
+    MILVUS_PASSWORD: ${MILVUS_PASSWORD:-}
+    MILVUS_DATABASE: ${MILVUS_DATABASE:-Dify}
+    
+    # Model Provider - LiteLLM via OpenAI Compatible
+    # Configure LiteLLM as OpenAI-compatible provider
+    OPENAI_API_BASE: http://litellm:4000
+    OPENAI_API_KEY: sk-c8b0734639e032001a5626a8
+    
+    # Document processing
+    ETL_TYPE: ${ETL_TYPE:-tika}
+    TIKA_SERVER_URL: http://tika:9998
+    
+    # Security
+    CONSOLE_CORS_ALLOW_ORIGINS: ${CONSOLE_CORS_ALLOW_ORIGINS:-*}
+    WEB_API_CORS_ALLOW_ORIGINS: ${WEB_API_CORS_ALLOW_ORIGINS:-*}
+    
+    # Application URLs
+    CONSOLE_API_URL: ${CONSOLE_API_URL:-http://localhost:8080/console/api}
+    CONSOLE_WEB_URL: ${CONSOLE_WEB_URL:-http://localhost:8080}
+    SERVICE_API_URL: ${SERVICE_API_URL:-http://localhost:8080/api}
+    APP_WEB_URL: ${APP_WEB_URL:-http://localhost:8080}
+    
+    # File upload configurations
+    UPLOAD_FILE_SIZE_LIMIT: ${UPLOAD_FILE_SIZE_LIMIT:-15}
+    UPLOAD_FILE_BATCH_LIMIT: ${UPLOAD_FILE_BATCH_LIMIT:-5}
+    
+    # Additional features
+    INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH: ${INDEXING_MAX_SEGMENTATION_TOKENS_LENGTH:-1000}
+    
+    # Sandbox configurations
+    CODE_EXECUTION_ENDPOINT: http://dify_sandbox:8194
+    CODE_EXECUTION_API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}
+
+  # Dify API Service
+  dify_api:
+    <<: *dify-common-env
+    image: langgenius/dify-api:0.15.2
+    container_name: dify-api
+    restart: always
+    environment:
+      <<: *dify-common-env
+      MODE: api
+    depends_on:
+      dify_db:
+        condition: service_healthy
+      dify_redis:
+        condition: service_started
+      dify_sandbox:
+        condition: service_started
+      milvus:
+        condition: service_started
+      litellm:
+        condition: service_started
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - ssrf_proxy_network
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify Worker Service
+  dify_worker:
+    <<: *dify-common-env
+    image: langgenius/dify-api:0.15.2
+    container_name: dify-worker
+    restart: always
+    environment:
+      <<: *dify-common-env
+      MODE: worker
+    depends_on:
+      dify_db:
+        condition: service_healthy
+      dify_redis:
+        condition: service_started
+      dify_sandbox:
+        condition: service_started
+      milvus:
+        condition: service_started
+    volumes:
+      - dify_storage:/app/api/storage
+    networks:
+      - ssrf_proxy_network
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Dify Web Frontend
+  dify_web:
+    image: langgenius/dify-web:0.15.2
+    container_name: dify-web
+    restart: always
+    environment:
+      CONSOLE_API_URL: ${CONSOLE_API_URL:-}
+      APP_API_URL: ${APP_API_URL:-}
+      SENTRY_DSN: ${WEB_SENTRY_DSN:-}
+      NEXT_TELEMETRY_DISABLED: ${NEXT_TELEMETRY_DISABLED:-1}
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Nginx Proxy for Dify
+  dify_nginx:
+    image: nginx:latest
+    container_name: dify-nginx
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/proxy.conf:/etc/nginx/proxy.conf
+    depends_on:
+      - dify_api
+      - dify_web
+    ports:
+      - "8080:80"
+    networks:
+      - ollama-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Initialization service (modified to support Dify)
+  init-service:
+    env_file:
+      - path: .env
+        required: false
+    container_name: init-service
+    build:
+      context: ../../../
+      dockerfile: deployments/docker/images/init/Dockerfile
+    volumes:
+      - tokens:/app/tokens
+      - config:/app/config
+    networks:
+      - ollama-net
+    environment:
+      - OLLAMA_API_URL=http://ollama:11434
+      - LITELLM_API_URL=http://litellm:4000
+      - LITELLM_MASTER_KEY=sk-1234
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - USE_OPENAI=${USE_OPENAI:-false}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-large}
+      - OPENAI_COMPLETION_MODEL=${OPENAI_COMPLETION_MODEL:-gpt-4o}
+      # Add Dify initialization
+      - DIFY_API_URL=http://dify_api:5001
+      - DIFY_ADMIN_EMAIL=${DIFY_ADMIN_EMAIL:-admin@example.com}
+      - DIFY_ADMIN_PASSWORD=${DIFY_ADMIN_PASSWORD:-admin123456}
+    depends_on:
+      - etcd
+      - minio
+      - milvus
+      - ollama
+      - litellm
+      - dify_db
+      - dify_redis
+    restart: "no"
+
+  # Ollama service (unchanged)
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:0.6.5
+    environment: {}
+    deploy:
+      resources:
+        reservations:
+          devices: []
+    volumes:
+      - ollama:/root/.ollama
+      - models:/models
+    ports:
+      - "11434:11434"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+
+  # Obelisk services (unchanged)
+  obelisk:
+    container_name: obelisk
+    build:
+      context: ../../../
+      dockerfile: deployments/docker/images/core/Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    command: ["poetry", "run", "mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+
+  obelisk-rag:
+    container_name: obelisk-rag
+    build:
+      context: ../../../
+      dockerfile: deployments/docker/images/rag/Dockerfile
+    volumes:
+      - rag-data:/app/data
+      - rag-vault:/app/vault
+      - tokens:/app/tokens:ro
+      - config:/app/config:ro
+    ports:
+      - "8001:8000"
+    environment:
+      - VAULT_DIR=/app/vault
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=${GENERATION_MODEL:-llama3}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-large}
+      - EMBEDDING_DIM=3072
+      - RETRIEVE_TOP_K=5
+      - CHUNK_SIZE=2500
+      - CHUNK_OVERLAP=500
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - WATCH_DOCS=true
+      - AUTO_INDEX_ON_START=false
+      - VECTOR_DB=milvus
+      - MILVUS_URI=http://milvus:19530
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - MODEL_PROVIDER=litellm
+      - FORCE_LITELLM_PROXY=true
+      - LITELLM_API_BASE=http://litellm:4000
+      - LITELLM_API_KEY=sk-c8b0734639e032001a5626a8
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ORG_ID=${OPENAI_ORG_ID:-}
+      - OPENAI_MODEL=gpt-4o
+      - OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+      - LLM_MODEL=gpt-4o
+      - EMBEDDING_MODEL=text-embedding-3-large
+    depends_on:
+      - init-service
+      - ollama
+      - milvus
+    networks:
+      - ollama-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  data:
+  models:
+  ollama:
+  rag-data:
+  rag-vault:
+  postgres_data:
+  tokens:
+  config:
+  milvus_data:
+  etcd_data:
+  minio_data:
+  # New Dify volumes
+  dify_postgres_data:
+  dify_redis_data:
+  dify_storage:
+  dify_sandbox_data:
+  dify_ssrf_config:
+
+networks:
+  ollama-net:
+    driver: bridge
+  ssrf_proxy_network:
+    driver: bridge
